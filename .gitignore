@@ -1,0 +1,4 @@
+*.pyc
+venv/*
+glove.6B.50d.txt
+.DS_Store
