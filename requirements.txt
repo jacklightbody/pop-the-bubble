@@ -1,0 +1,6 @@
+flask
+gensim
+goose-extractor
+unidecode
+pyspotlight
+textblob
