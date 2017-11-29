@@ -1,22 +1,26 @@
 {
-  	"manifest_version": 2,
+  "manifest_version": 2,
 
-  	"name": "Pop the Bubble",
-  	"description": "Get reminders when you've read many takes from one side takes of an issue",
-  	"version": "1.0",
+ "name": "Pop the Bubble",
+  "description": "Get reminders when you've read a lot of one side of an issue",
+  "version": "1.0",
 
-  	"browser_action": {
-    	"default_icon": "icon.png"
-  	},
-  	"background": { "scripts": ["background.js"] },
-  	"permissions": [
-    	"activeTab"
-  	],
-    "content_scripts": [
-      {
-        "matches" : ["<all_urls>"],
-        "js" : ["content.js"],
-        "run_at": "document_end"
-      }
-    ]
+ "browser_action": {
+   	"default_icon": "icon.png",
+     "default_popup": "popup.html"
+  },
+  "background": { 
+     "page": "background.html"
+   },
+  "permissions": [
+   	"activeTab",
+     "<all_urls>"
+  ],
+   "content_scripts": [
+     {
+       "matches" : ["<all_urls>"],
+       "js" : ["content.js"],
+       "run_at": "document_end"
+     }
+   ]
 }

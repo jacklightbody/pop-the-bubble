@@ -1,1 +1,1 @@
-chrome.runtime.sendMessage({changeIcon: true});
+chrome.runtime.sendMessage({pageLoaded: true, doc: document.all[0].outerHTML});
