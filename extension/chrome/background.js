@@ -127,8 +127,8 @@ function filterTopics(topicList, nounList, keep = 5){
     });
     // Check that all our items have at least three occurrences
     // otherwise they"re not really keywords
-    topicList = topicList.filter(item => item.count > 1);
-    
+    topicList = topicList.filter(item => item.count > 2);
+
     // Sort the array based on the counts
     topicList.sort(function(el1, el2) {
         // we want to discourage single word 
@@ -162,5 +162,4 @@ function removeStopwords(text){
         "won", "wouldn"
     ]
     return text.replace(new RegExp("\\b("+stopwords.join("|")+")\\b", "g"), "");
-
 }
