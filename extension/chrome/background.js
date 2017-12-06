@@ -2,7 +2,7 @@ var wordThreshold = 100;
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.pageLoaded) {
-            processPage(request.doc);
+            processPage(request.doc, request.loc);
             chrome.browserAction.setIcon({path:"alt.png"});
         }
     }
@@ -13,13 +13,13 @@ chrome.tabs.onActivated.addListener(
     }
 );
 //pipeline handler
-function processPage(doc){
-    var article = extractText(doc.all[0].outerHTML);
+function processPage(doc, url){
+    var article = extractText(doc);
     console.log(article);
     if( article.split(" ").length > wordThreshold){
         sentiments = getArticleTopicsAndSentiments(article);
         console.log(sentiments);
-        addSite(document.URL, sentiments)
+        addSite(url, sentiments)
     }
 }
 // cleans the page and formats it for readability
@@ -73,8 +73,10 @@ function getArticleTopicsAndSentiments(text){
     // get the most frequent n-grams and map so each has a sentiment of 0
     // saves us a check later on
     var topicList = filterTopics(nlpText.ngrams().list, nlpText.nouns().out("array"));
-    topicList.forEach(function(obj) { obj.sentiment = 0; });
-
+    var topicSentiments = {}
+    topicList.forEach(function(sentiment){
+        topicSentiments[sentiment.key] = 0;
+    });
     //declare all our vars
     var add;
     var sentenceSentiment;
@@ -102,11 +104,11 @@ function getArticleTopicsAndSentiments(text){
             substrings = sentences[i].split(topicList[j].key);
             occurrences = substrings.length - 1;
             if(occurrences > 0){
-                topicList[topicList[j].key] = add;
+                topicSentiments[topicList[j].key] += add;
             }
         }
     }
-    return topicList;
+    return topicSentiments;
 }
 
 // get our top topics from all the possible topics and their frequencies
@@ -120,6 +122,7 @@ function filterTopics(topicList, nounList, keep = 5){
         for(i = 0; i < uniqueNounList.length; i+=1){
             searchString = " "+uniqueNounList[i]+" ";
             cleanedTopic = " "+item.key+" "
+            // make sure that the phrase contains a noun
             if(cleanedTopic.indexOf(searchString) != -1){
                 return true;
             }
