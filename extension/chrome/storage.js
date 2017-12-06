@@ -1,7 +1,7 @@
 /*
 * User Data is the JSON that we store across all the different browsers
 * Format is 
-{   
+pop-the-bubble-data: {   
     sites: {
         "http://nytimes/an/article": {
             topics: [
@@ -23,10 +23,32 @@
         "topic 2": -3,
         "another topic": 3
     }
+    lastCleaned: 121231231230
 }
 */
-function jsonifyData(userData, url, sentiments){
-    userData = JSON.parse(userData)
+var storageKey = "pop-the-bubble-data";
+function addSite(url, sentiments){
+    // specify default values here so that if we haven't saved anything yet it doesn't fail
+    var baseDS = {sites: {}, topics: {}, lastCleaned: Date.now()};
+    chrome.storage.local.get({storageKey: baseDS}, function(items){
+        items.forEach(function(el){
+            // if it is our data then it has to have the topics dict set
+            if("topics" in el){
+                // first clean out the old data if needed
+                if(el.lastCleaned < Date.now() - 24 * 60 * 60){
+                    cleanOldData(userData);
+                    userData.lastCleaned = Date.now();
+                }
+                // update the data and set it again
+                var userData = updateUserData(el, url, sentiments);
+                chrome.storage.local.set({ storageKey: userData}, function(){
+                    console.log("saved successfully");
+                });
+            }
+        });
+    });
+}
+function updateUserData(userData, url, sentiments){
     if(url in userData.sites){
         userData.sites[url].timestamp = Date.now();
     }else{
@@ -36,10 +58,9 @@ function jsonifyData(userData, url, sentiments){
         updateTopicSentiments(userData, topicList)
         userData.sites[url] = {topics: topicList, timestamp = Date.now()};
     }
-    return JSON.stringify(userData);
+    return userData;
 }
 function cleanOldData(userData, daysBack = 14){
-    userData = JSON.parse(userData)
     var oldTimestamp = Date.now() - (daysBack * 24 * 60 * 60);
     for(var i = userData.sites.length - 1; i >= 0; i--){
         if(userData.sites[i].timestamp < oldTimestamp){
@@ -51,7 +72,7 @@ function cleanOldData(userData, daysBack = 14){
             userData.sites.splice(i, 1);
         }
     }
-    return JSON.stringify(userData);
+    return userData
 }
 function updateTopicSentiments(userData, sentiments, add=true){
     var mult = add | 0;

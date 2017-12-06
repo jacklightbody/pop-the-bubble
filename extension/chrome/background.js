@@ -14,11 +14,12 @@ chrome.tabs.onActivated.addListener(
 );
 //pipeline handler
 function processPage(doc){
-    var article = extractText(doc);
+    var article = extractText(doc.all[0].outerHTML);
     console.log(article);
     if( article.split(" ").length > wordThreshold){
         sentiments = getArticleTopicsAndSentiments(article);
         console.log(sentiments);
+        addSite(document.URL, sentiments)
     }
 }
 // cleans the page and formats it for readability
