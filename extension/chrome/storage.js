@@ -33,6 +33,7 @@ function jsonifyData(userData, url, sentiments){
         topicList = Object.keys(sentiments).map(function(key) {
             return [key, sentiments[key]];
         });
+        updateTopicSentiments(userData, topicList)
         userData.sites[url] = {topics: topicList, timestamp = Date.now()};
     }
     return JSON.stringify(userData);
@@ -44,13 +45,17 @@ function cleanOldData(userData, daysBack = 14){
         if(userData.sites[i].timestamp < oldTimestamp){
             // the site was visited more than days back ago
             // so we want to remove it from the record
-            forEach(topic in userData.sites[i].topics){
-                // first reverse the sentiments
-                userData.topics[topic[0]] -= topic[1];
-            }
+            // first reverse the sentiments
+            updateTopicSentiments(userData, userData.sites[i].topics, false)
             // and then remove the site from our record
             userData.sites.splice(i, 1);
         }
     }
     return JSON.stringify(userData);
+}
+function updateTopicSentiments(userData, sentiments, add=true){
+    var mult = add | 0;
+    sentiments.forEach(function(el){
+        userData.topics[el[0]] += mult * el[1];
+    });
 }
