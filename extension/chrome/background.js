@@ -14,13 +14,30 @@ chrome.tabs.onActivated.addListener(
 );
 //pipeline handler
 function processPage(doc, url){
-    var article = extractText(doc);
-    console.log(article);
-    if(article.split(" ").length > wordThreshold){
-        sentiments = getArticleTopicsAndSentiments(article);
-        console.log(sentiments);
-        addSite(url, sentiments)
+    var sentiments = getSite(url);
+    if(sentiments){
+        updateIcon(sentiments);
+    }else{
+        var article = extractText(doc);
+        console.log(article);
+        if(article.split(" ").length > wordThreshold){
+            sentiments = getArticleTopicsAndSentiments(article);
+            console.log(sentiments);
+            addSite(url, sentiments)
+        }
     }
+}
+
+function updateIcon(sentiments){
+    maxSentiment = 0;
+    maxSentimentTopic = "";
+    sentiments.forEach(function(topicSentiment){
+        if(Math.abs(topicSentiment[1]) > Math.abs(maxSentiment)){
+            maxSentiment = topicSentiment[1];
+            maxSentimentTopic = topicSentiment[0];
+        }
+    });
+    // need to generate icons next
 }
 // cleans the page and formats it for readability
 function extractText(doc){
@@ -122,6 +139,12 @@ function getArticleTopicsAndSentiments(text){
             occurrences = substrings.length - 1;
             if(occurrences > 0){
                 topicSentiments[topicList[j].key] += add;
+                // just set an artificial cap on it so one article doesn't skew too much
+                if(topicSentiments[topicList[j].key] > 20){
+                    topicSentiments[topicList[j].key] = 20;
+                }else if(topicSentiments[topicList[j].key] < -20){
+                    topicSentiments[topicList[j].key] = -20;
+                }
             }
         }
     }

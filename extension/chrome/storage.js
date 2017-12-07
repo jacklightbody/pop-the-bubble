@@ -27,9 +27,25 @@ pop-the-bubble-data: {
 }
 */
 var storageKey = "pop-the-bubble-data";
+var baseDS = {sites: {}, topics: {}, lastCleaned: Date.now()};
+
+function getSite(url){
+    chrome.storage.local.get({storageKey: baseDS}, function(el){
+        if(url in el.storageKey.sites){
+            var result = [];
+            el.storageKey.sites[url].topics.forEach(function(topic){
+                result.push([
+                    el.storageKey.topics[topic[0]],
+                    el.storageKey.topics[topic[1]]
+                ]);
+            });
+            return result;
+        }
+        return false;
+    });
+}
 function addSite(url, sentiments){
     // specify default values here so that if we haven't saved anything yet it doesn't fail
-    var baseDS = {sites: {}, topics: {}, lastCleaned: Date.now()};
     chrome.storage.local.get({storageKey: baseDS}, function(el){
         el = el.storageKey;
         console.log(el);
@@ -44,7 +60,6 @@ function addSite(url, sentiments){
         chrome.storage.local.set({storageKey: userData}, function(){
             console.log("Data Saved Successfully");
         });
-        chrome.storage.local.clear();
     });
 }
 function updateUserData(userData, url, sentiments){
