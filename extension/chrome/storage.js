@@ -44,10 +44,11 @@ function addSite(url, sentiments){
         chrome.storage.local.set({storageKey: userData}, function(){
             console.log("Data Saved Successfully");
         });
+        chrome.storage.local.clear();
     });
 }
 function updateUserData(userData, url, sentiments){
-    if(1==2){//url in userData.sites){
+    if(url in userData.sites){
         userData.sites[url].timestamp = Date.now();
     }else{
         var topicList = Object.keys(sentiments).map(function(key) {

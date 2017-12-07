@@ -16,7 +16,7 @@ chrome.tabs.onActivated.addListener(
 function processPage(doc, url){
     var article = extractText(doc);
     console.log(article);
-    if( article.split(" ").length > wordThreshold){
+    if(article.split(" ").length > wordThreshold){
         sentiments = getArticleTopicsAndSentiments(article);
         console.log(sentiments);
         addSite(url, sentiments)
@@ -37,20 +37,36 @@ function extractText(doc){
     article = cleanText(article);
     return article;
 }
+
 // cleans all the text by getting rid of extra spaces, bad words
-// also by lowercasing and stemming it so we have a standarized set of text
+// also by lowercasing and lemmatizing it so we have a standarized set of text
 function cleanText(text){
     text = removeStopwords(text);
-    var words = text.split(" ");
+    text = text.replace(/[^\w.?!\s]|_/g, "")
+         .replace(/\s+/g, " ");
+    // get rid of non alphanumeric characters
+    var nlpText = nlp(text);
     var cleaned = "";
     var i;
-    for(i = 0; i < words.length; i+=1){
-        word = stemmer(words[i].toLowerCase());
-        if(word.length > 1 || word == "a" || word == "i"){
-            // don"t want any single char words that happen due to bad splitting
-            // that aren"t actually words
+    var j;
+    var pos;
+    var lemmatizedWord;
+    var lemmatizer = new Lemmatizer();
+    for(j = 0; j < nlpText.list.length; j+=1){
+        for(i = 0; i < nlpText.list[j].terms.length; i+=1){
+            // conver words to lower case and lemmatize if we can
+            // we need P.O.S. for better lemmatization so get those too
+            word = nlpText.list[j].terms[i].normal.toLowerCase();
+            pos = getPartOfSpeech(nlpText.list[j].terms[i]);
+            if(pos){
+                lemmatizedWord = lemmatizer.only_lemmas(word, pos)[0];  
+                if(lemmatizedWord){
+                    word = lemmatizedWord;
+                }
+            }
             cleaned += " "+word;
         }
+        cleaned += "."
     }
     return cleaned;
 }
@@ -72,7 +88,7 @@ function getArticleTopicsAndSentiments(text){
 
     // get the most frequent n-grams and map so each has a sentiment of 0
     // saves us a check later on
-    var topicList = filterTopics(nlpText.ngrams().list, nlpText.nouns().out("array"));
+    var topicList = filterTopics(nlpText.ngrams().list);
     var topicSentiments = {}
     topicList.forEach(function(sentiment){
         topicSentiments[sentiment.key] = 0;
@@ -85,6 +101,7 @@ function getArticleTopicsAndSentiments(text){
     var i;
     var j;
     var sentiment = new Sentimood();
+
 
     // we want to go sentence by sentence
     // so that we track whether each topic is good or bad
@@ -113,17 +130,13 @@ function getArticleTopicsAndSentiments(text){
 
 // get our top topics from all the possible topics and their frequencies
 // we only want to keep topics if they contain a noun
-function filterTopics(topicList, nounList, keep = 5){
-    var uniqueNounList = Array.from(new Set(nounList))
+function filterTopics(topicList, keep = 5){
     var searchString;
     var i;
     var cleanedTopic;
     topicList = topicList.filter(function(item) {
-        for(i = 0; i < uniqueNounList.length; i+=1){
-            searchString = " "+uniqueNounList[i]+" ";
-            cleanedTopic = " "+item.key+" "
-            // make sure that the phrase contains a noun
-            if(cleanedTopic.indexOf(searchString) != -1){
+        for(i = 0; i < item.terms.length; i+=1){
+            if(getPartOfSpeech(item.terms[i]) == "noun"){
                 return true;
             }
         }
@@ -143,6 +156,27 @@ function filterTopics(topicList, nounList, keep = 5){
     var sliced = topicList.slice(0, 10);
     return sliced;
 
+}
+function getPartOfSpeech(word){
+    var tags = word.tags
+    if(tags.Noun || tags.Value || tags.NounPhrase || tags.Acronym){
+        return "noun";
+    }else if(tags.Verb || tags.VerbPhrase){
+        return "verb";
+    }else if(tags.Adjective){
+        return "adj";
+    }else if(tags.Adverb){
+        return "adv";
+    }else if(tags.TitleCase || Object.keys(tags).length === 0){
+        // catch nouns that we might not know
+        return "noun";
+    }else if(tags.Preposition || tags.Determiner || tags.Conjunction || tags.Expression){
+        return false;
+    }else{
+        console.log("Unknown part of speech");
+        console.log(word);
+        return false;
+    }
 }
 
 // remove all the stopwords from a given text snippet
