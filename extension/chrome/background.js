@@ -3,7 +3,6 @@ chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.pageLoaded) {
             processPage(request.doc, request.loc);
-            chrome.browserAction.setIcon({path:"alt.png"});
         }
     }
 );
@@ -14,21 +13,49 @@ chrome.tabs.onActivated.addListener(
 );
 //pipeline handler
 function processPage(doc, url){
-    var sentiments = getSite(url);
-    if(sentiments){
-        updateIcon(sentiments);
-    }else{
-        var article = extractText(doc);
-        console.log(article);
-        if(article.split(" ").length > wordThreshold){
-            sentiments = getArticleTopicsAndSentiments(article);
-            console.log(sentiments);
-            addSite(url, sentiments)
+    getSite(url, function(sentiments){
+        if(sentiments){
+            updateExtensionInfo(sentiments);
+        }else{
+            var article = extractText(doc);
+            console.log(article);
+            if(article.split(" ").length > wordThreshold){
+                sentiments = getArticleTopicsAndSentiments(article);
+                console.log(sentiments);
+                updateSiteSentiments(url, sentiments, function(sentiments){
+                    console.log(sentiments);
+                    updateExtensionInfo(sentiments);
+                });
+            }
         }
-    }
+    });
 }
+function updateExtensionInfo(sentiments){
+    var sentiment = getMostExtremeSentiment(sentiments);
+    updateIcon(sentiment);
+}
+function updateIcon(sentiment){
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");   
 
-function updateIcon(sentiments){
+    //draw triangle
+    ctx.beginPath();
+    ctx.moveTo(50, 52.5);
+    ctx.lineTo(25, 100);
+    ctx.lineTo(75, 100);
+    ctx.fill();
+
+    //draw balance line- has to pass through 50, 50
+    var postiveY = 50 - (sentiment/2)
+    var negativeY = 50 + (sentiment/2)
+    ctx.beginPath();
+    ctx.moveTo(negativeY, 100);
+    ctx.lineTo(100, postiveY);
+    ctx.lineWidth=5;
+    ctx.stroke();
+    chrome.browserAction.setIcon({imageData:ctx.getImageData(0, 0, canvas.width,canvas.height)});
+}
+function getMostExtremeSentiment(sentiments){
     maxSentiment = 0;
     maxSentimentTopic = "";
     sentiments.forEach(function(topicSentiment){
@@ -41,6 +68,7 @@ function updateIcon(sentiments){
 }
 // cleans the page and formats it for readability
 function extractText(doc){
+
     // we want to create a dummy div so we can get rid of requests before they occur
     // if we add the content to a preexisting one the requests still happen
     // before we can remove them individual elements
@@ -193,7 +221,8 @@ function getPartOfSpeech(word){
     }else if(tags.TitleCase || Object.keys(tags).length === 0){
         // catch nouns that we might not know
         return "noun";
-    }else if(tags.Preposition || tags.Determiner || tags.Conjunction || tags.Expression){
+    }else if(tags.Preposition || tags.Url || tags.Determiner || 
+        tags.Conjunction || tags.Expression){
         return false;
     }else{
         console.log("Unknown part of speech");
