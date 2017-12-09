@@ -15,8 +15,11 @@ chrome.tabs.onActivated.addListener(
 function processPage(doc, url){
     getSite(url, function(sentiments){
         if(sentiments){
+            console.log("Already existing");
             updateExtensionInfo(sentiments);
         }else{
+            console.log("New");
+
             var article = extractText(doc);
             console.log(article);
             if(article.split(" ").length > wordThreshold){
@@ -32,11 +35,14 @@ function processPage(doc, url){
 }
 function updateExtensionInfo(sentiments){
     var sentiment = getMostExtremeSentiment(sentiments);
+    var sentimentTopic = sentiment[0];
+    sentiment = sentiment[1]
     updateIcon(sentiment);
 }
 function updateIcon(sentiment){
     var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");   
+    var ctx = canvas.getContext("2d"); 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);  
 
     //draw triangle
     ctx.beginPath();
@@ -49,13 +55,14 @@ function updateIcon(sentiment){
     var postiveY = 50 - (sentiment/2)
     var negativeY = 50 + (sentiment/2)
     ctx.beginPath();
-    ctx.moveTo(negativeY, 100);
-    ctx.lineTo(100, postiveY);
+    ctx.moveTo(100, negativeY);
+    ctx.lineTo(0, postiveY);
     ctx.lineWidth=5;
     ctx.stroke();
     chrome.browserAction.setIcon({imageData:ctx.getImageData(0, 0, canvas.width,canvas.height)});
 }
 function getMostExtremeSentiment(sentiments){
+    console.log(sentiments)
     maxSentiment = 0;
     maxSentimentTopic = "";
     sentiments.forEach(function(topicSentiment){
@@ -64,7 +71,7 @@ function getMostExtremeSentiment(sentiments){
             maxSentimentTopic = topicSentiment[0];
         }
     });
-    // need to generate icons next
+    return [maxSentimentTopic, maxSentiment]
 }
 // cleans the page and formats it for readability
 function extractText(doc){
@@ -79,6 +86,10 @@ function extractText(doc){
     removeImages(page);
     var article = readability.grabArticle(page);
     article = article.textContent || article.innerText;
+    var unescaped = document.createElement("div");
+    article = _.unescape(article);
+    unescaped.innerHTML = article
+    article = unescaped.textContent || unescaped.innerText || article;
     article = cleanText(article);
     return article;
 }
@@ -89,7 +100,8 @@ function cleanText(text){
     text = removeStopwords(text);
     text = text.replace(/[^\w.?!\s]|_/g, "")
          .replace(/\s+/g, " ");
-    // get rid of non alphanumeric characters
+    // get rid of non alphanumeric/sentence delimiting characters
+
     var nlpText = nlp(text);
     var cleaned = "";
     var i;
@@ -97,6 +109,7 @@ function cleanText(text){
     var pos;
     var lemmatizedWord;
     var lemmatizer = new Lemmatizer();
+
     for(j = 0; j < nlpText.list.length; j+=1){
         for(i = 0; i < nlpText.list[j].terms.length; i+=1){
             // conver words to lower case and lemmatize if we can
@@ -210,7 +223,7 @@ function filterTopics(topicList, keep = 5){
 }
 function getPartOfSpeech(word){
     var tags = word.tags
-    if(tags.Noun || tags.Value || tags.NounPhrase || tags.Acronym){
+    if(tags.Noun || tags.Value || tags.NounPhrase || tags.Acronym || tags.Currency){
         return "noun";
     }else if(tags.Verb || tags.VerbPhrase){
         return "verb";

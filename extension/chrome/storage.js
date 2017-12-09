@@ -28,34 +28,36 @@ pop-the-bubble-data: {
 */
 var storageKey = "pop-the-bubble-data";
 var baseDS = {sites: {}, topics: {}, lastCleaned: Date.now()};
+var storageDefault = {}
+storageDefault[storageKey] = baseDS
 
 function getSite(url, callback){
-        console.log("test")
-
-    chrome.storage.local.get({storageKey: baseDS}, function(el){
-        console.log("tffest")
-
-        callback(getSiteSentiments(el.storageKey, url));
+    chrome.storage.local.get(storageDefault, function(el){
+        callback(getSiteSentiments(el[storageKey], url));
     });
 }
+
 function updateSiteSentiments(url, sentiments, callback=false){
     // specify default values here so that if we haven't saved anything yet it doesn't fail
-    chrome.storage.local.get({storageKey: baseDS}, function(el){
-        el = el.storageKey;
-        console.log(el);
+    chrome.storage.local.get(storageDefault, function(el){
+        var userData = el[storageKey];
 
         // first clean out the old data if needed
-        if(el.lastCleaned < Date.now() - 24 * 60 * 60 * 1000){
-            cleanOldData(userData);
+        if(userData.lastCleaned < Date.now() - 24 * 60 * 60 * 1000){
+            userData = cleanOldData(userData);
             userData.lastCleaned = Date.now();
         }
         // update the data and set it again
-        var userData = updateUserData(el, url, sentiments);
+        userData = updateUserData(userData, url, sentiments);
+
         if(callback){
             callback(getSiteSentiments(userData, url));
         }
-        chrome.storage.local.set({storageKey: userData}, function(){
+        var setData = {}
+        setData[storageKey] = userData;
+        chrome.storage.local.set(setData, function(){
             console.log("Data Saved Successfully");
+            console.log(userData)
         });
     });
 }
@@ -65,8 +67,8 @@ function getSiteSentiments(userData, url){
         var result = [];
         userData.sites[url].topics.forEach(function(topic){
             result.push([
-                userData.topics[topic[0]],
-                userData.topics[topic[1]]
+                topic[0],
+                userData.topics[topic[0]]
             ]);
         });
         return result;
