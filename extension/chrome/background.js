@@ -2,25 +2,42 @@ var wordThreshold = 100;
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.pageLoaded) {
+            console.log("2")
             processPage(request.doc, request.loc);
+        }
+        if (request.action == "getSentiments"){
+            console.log("1")
+            processPage(false, request.url);
         }
     }
 );
 chrome.tabs.onActivated.addListener(
     function(activeInfo) {
-        chrome.browserAction.setIcon({path:"icon.png"});
+        chrome.tabs.get(activeInfo.tabId, function(tab) {
+            processPage(false, tab.url);
+        });
     }
 );
 //pipeline handler
 function processPage(doc, url){
     getSite(url, function(sentiments){
         if(sentiments){
-            console.log("Already existing");
+            console.log("Already Visted Article");
             updateExtensionInfo(sentiments);
         }else{
-            console.log("New");
-
-            var article = extractText(doc);
+            console.log("New URL");
+            if(!doc){
+                console.log(doc);
+                invalidArticle();
+                return;
+            }
+            try{
+                var article = extractText(doc);
+            }catch(err){
+                console.log(err);
+                invalidArticle();
+                return;
+            }
             console.log(article);
             if(article.split(" ").length > wordThreshold){
                 sentiments = getArticleTopicsAndSentiments(article);
@@ -33,12 +50,25 @@ function processPage(doc, url){
         }
     });
 }
+function invalidArticle(){
+    console.log("Not an Article");
+    updateIcon(0);
+    chrome.runtime.sendMessage({action: "notarticle"});
+}
+
 function updateExtensionInfo(sentiments){
     var sentiment = getMostExtremeSentiment(sentiments);
     var sentimentTopic = sentiment[0];
-    sentiment = sentiment[1]
+    sentiment = sentiment[1];
+        chrome.runtime.sendMessage({
+        action: "sentiments", 
+        sentiments: sentiments,
+        mostExtremeTopic: sentimentTopic,
+        mostExtremeSentiment: sentiment
+    });
     updateIcon(sentiment);
 }
+
 function updateIcon(sentiment){
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d"); 
@@ -217,7 +247,7 @@ function filterTopics(topicList, keep = 5){
             el1.key.split(" ").length^2 *el1.count;
     });
 
-    var sliced = topicList.slice(0, 10);
+    var sliced = topicList.slice(0, 3);
     return sliced;
 
 }
@@ -234,12 +264,7 @@ function getPartOfSpeech(word){
     }else if(tags.TitleCase || Object.keys(tags).length === 0){
         // catch nouns that we might not know
         return "noun";
-    }else if(tags.Preposition || tags.Url || tags.Determiner || 
-        tags.Conjunction || tags.Expression){
-        return false;
     }else{
-        console.log("Unknown part of speech");
-        console.log(word);
         return false;
     }
 }
