@@ -5,3 +5,4 @@ glove.6B.50d.txt
 *.txt
 *.model
 nltk_data/*
+chrome.pem

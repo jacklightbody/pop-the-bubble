@@ -3,7 +3,7 @@
 
  "name": "Pop the Bubble",
   "description": "Get reminders when you've read a lot of one side of an issue",
-  "version": "1.0",
+  "version": "0.1",
 
  "browser_action": {
    	"default_icon": "icon.png",
