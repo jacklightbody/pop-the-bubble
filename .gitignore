@@ -1,8 +1,4 @@
-*.pyc
-venv/*
-glove.6B.50d.txt
 .DS_Store
-*.txt
-*.model
-nltk_data/*
 chrome.pem
+*.pxd
+
