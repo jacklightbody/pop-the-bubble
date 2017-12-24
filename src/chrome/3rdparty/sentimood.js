@@ -1178,6 +1178,7 @@ Sentimood = (function() {
     "heavenly": 4,
     "heavyhearted": -2,
     "hell": -4,
+    "hellish": -4,
     "help": 2,
     "helpful": 2,
     "helping": 2,

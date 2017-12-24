@@ -1,4 +1,25 @@
-var wordThreshold = 100;
+let wordThreshold = 100;
+let minKeywordCharLength = 3;
+let maxKeywordWordsLength = 5; 
+let minKeywordFrequency = 3; 
+let keepKeywords = 5
+let stopwords = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you",
+    "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she",
+    "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs",
+    "themselves", "what", "which", "who", "whom", "this", "that", "these", "those",
+    "am", "is", "are", "was", "were", "bae", "been", "being", "have", "has", "had",
+    "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if",
+    "or", "because", "as", "until", "while", "of", "at", "by", "for", "with",
+    "about", "against", "between", "into", "through", "during", "before", "after",
+    "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over",
+    "under", "again", "further", "then", "once", "here", "there", "when", "where",
+    "why", "how", "all", "any", "both", "each", "few", "more", "most", "other",
+    "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too",
+    "very", "s", "t", "can", "will", "just", "don", "should", "now", "d", "ll", "m",
+    "o", "re", "ve", "y", "ain", "aren", "couldn", "didn", "doesn", "hadn", "hasn",
+    "haven", "isn", "ma", "mightn", "mustn", "needn", "shan", "shouldn", "wasn", "weren",
+    "won", "wouldn"
+];
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.pageLoaded) {
@@ -19,8 +40,8 @@ chrome.tabs.onActivated.addListener(
     }
 );
 //pipeline handler
-function processPage(doc, url){
-    getSite(url, function(sentiments){
+async function processPage(doc, url){
+    getSite(url, async function(sentiments){
         if(sentiments){
             console.log("Already Visted Article");
             updateExtensionInfo(sentiments);
@@ -32,20 +53,30 @@ function processPage(doc, url){
                 return;
             }
             try{
-                var article = extractText(doc);
+                let article = extractText(doc);
+                console.log(article);
+                if(article.split(" ").length > wordThreshold){
+                    console.log("rake")
+                    var topics = await rake(
+                        article, 
+                        stopwords, 
+                        minKeywordCharLength, 
+                        maxKeywordWordsLength, 
+                        minKeywordFrequency
+                    );
+                    topics = filterTopics(topics, keepKeywords);
+                    console.log(topics);
+                    sentiments = getTopicSentiments(article, topics);
+                    console.log(sentiments);
+                    updateSiteSentiments(url, sentiments, function(sentiments){
+                        console.log(sentiments);
+                        updateExtensionInfo(sentiments);
+                    });
+                }
             }catch(err){
                 console.log(err);
                 invalidArticle();
                 return;
-            }
-            console.log(article);
-            if(article.split(" ").length > wordThreshold){
-                sentiments = getArticleTopicsAndSentiments(article);
-                console.log(sentiments);
-                updateSiteSentiments(url, sentiments, function(sentiments){
-                    console.log(sentiments);
-                    updateExtensionInfo(sentiments);
-                });
             }
         }
     });
@@ -120,44 +151,9 @@ function extractText(doc){
     article = _.unescape(article);
     unescaped.innerHTML = article
     article = unescaped.textContent || unescaped.innerText || article;
-    article = cleanText(article);
     return article;
 }
 
-// cleans all the text by getting rid of extra spaces, bad words
-// also by lowercasing and lemmatizing it so we have a standarized set of text
-function cleanText(text){
-    text = removeStopwords(text);
-    text = text.replace(/[^\w.?!\s]|_/g, "")
-         .replace(/\s+/g, " ");
-    // get rid of non alphanumeric/sentence delimiting characters
-
-    var nlpText = nlp(text);
-    var cleaned = "";
-    var i;
-    var j;
-    var pos;
-    var lemmatizedWord;
-    var lemmatizer = new Lemmatizer();
-
-    for(j = 0; j < nlpText.list.length; j+=1){
-        for(i = 0; i < nlpText.list[j].terms.length; i+=1){
-            // conver words to lower case and lemmatize if we can
-            // we need P.O.S. for better lemmatization so get those too
-            word = nlpText.list[j].terms[i].normal.toLowerCase();
-            pos = getPartOfSpeech(nlpText.list[j].terms[i]);
-            if(pos){
-                lemmatizedWord = lemmatizer.only_lemmas(word, pos)[0];  
-                if(lemmatizedWord){
-                    word = lemmatizedWord;
-                }
-            }
-            cleaned += " "+word;
-        }
-        cleaned += "."
-    }
-    return cleaned;
-}
 
 // get rid of all images so our background page doesn"t try to load them
 function removeImages(doc){
@@ -170,16 +166,15 @@ function removeImages(doc){
 
 // does the meat of the work, gets all the topics
 // and their associated sentiments
-function getArticleTopicsAndSentiments(text){
+function getTopicSentiments(text, topicList){
     var nlpText = nlp(text);
     var sentences = nlpText.sentences().out("array");
 
     // get the most frequent n-grams and map so each has a sentiment of 0
     // saves us a check later on
-    var topicList = filterTopics(nlpText.ngrams().list);
     var topicSentiments = {}
-    topicList.forEach(function(sentiment){
-        topicSentiments[sentiment.key] = 0;
+    topicList.forEach(function(topic){
+        topicSentiments[topic] = 0;
     });
     //declare all our vars
     var add;
@@ -206,15 +201,16 @@ function getArticleTopicsAndSentiments(text){
         // we want joe to have a positive sentiment, and bob a negative
         // not both to have a neutral sentiment
         for(j = 0; j < topicList.length; j+=1){
-            substrings = sentences[i].split(topicList[j].key);
+            substrings = sentences[i].split(topicList[j]);
             occurrences = substrings.length - 1;
             if(occurrences > 0){
-                topicSentiments[topicList[j].key] += add;
+                topicSentiments[topicList[j]] += add;
+
                 // just set an artificial cap on it so one article doesn't skew too much
-                if(topicSentiments[topicList[j].key] > 20){
-                    topicSentiments[topicList[j].key] = 20;
-                }else if(topicSentiments[topicList[j].key] < -20){
-                    topicSentiments[topicList[j].key] = -20;
+                if(topicSentiments[topicList[j]] > 20){
+                    topicSentiments[topicList[j]] = 20;
+                }else if(topicSentiments[topicList[j]] < -20){
+                    topicSentiments[topicList[j]] = -20;
                 }
             }
         }
@@ -224,11 +220,18 @@ function getArticleTopicsAndSentiments(text){
 
 // get our top topics from all the possible topics and their frequencies
 // we only want to keep topics if they contain a noun
-function filterTopics(topicList, keep = 5){
+function filterTopics(topics, keep = 5){
     var searchString;
     var i;
-    var cleanedTopic;
+    var itemWords;
+    var topicList = [];
+    var finalTopics = []
+    Object.keys(topics).forEach(function(key){
+        topicList.push([key, topics[key]]);
+    })
     topicList = topicList.filter(function(item) {
+        item = nlp(item[0]).list[0];
+
         for(i = 0; i < item.terms.length; i+=1){
             if(getPartOfSpeech(item.terms[i]) == "noun"){
                 return true;
@@ -236,20 +239,13 @@ function filterTopics(topicList, keep = 5){
         }
         return false;
     });
-    // Check that all our items have at least three occurrences
-    // otherwise they"re not really keywords
-    topicList = topicList.filter(item => item.count > 2);
-
-    // Sort the array based on the counts
     topicList.sort(function(el1, el2) {
-        // we want to discourage single word 
-        return el2.key.split(" ").length^2 * el2.count - 
-            el1.key.split(" ").length^2 *el1.count;
+        // sort in desc order of score
+        return el2[1] - el1[1];
     });
-
-    var sliced = topicList.slice(0, 3);
-    return sliced;
-
+    topicList = topicList.slice(0, keep);
+    topicList.forEach(function(item){ finalTopics.push(item[0])})
+    return finalTopics;
 }
 function getPartOfSpeech(word){
     var tags = word.tags
@@ -269,25 +265,3 @@ function getPartOfSpeech(word){
     }
 }
 
-// remove all the stopwords from a given text snippet
-// these should never be one of our keywords but they occur frequently so we don"t want them
-function removeStopwords(text){
-    stopwords = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you",
-        "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she",
-        "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs",
-        "themselves", "what", "which", "who", "whom", "this", "that", "these", "those",
-        "am", "is", "are", "was", "were", "bae", "been", "being", "have", "has", "had",
-        "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if",
-        "or", "because", "as", "until", "while", "of", "at", "by", "for", "with",
-        "about", "against", "between", "into", "through", "during", "before", "after",
-        "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over",
-        "under", "again", "further", "then", "once", "here", "there", "when", "where",
-        "why", "how", "all", "any", "both", "each", "few", "more", "most", "other",
-        "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too",
-        "very", "s", "t", "can", "will", "just", "don", "should", "now", "d", "ll", "m",
-        "o", "re", "ve", "y", "ain", "aren", "couldn", "didn", "doesn", "hadn", "hasn",
-        "haven", "isn", "ma", "mightn", "mustn", "needn", "shan", "shouldn", "wasn", "weren",
-        "won", "wouldn"
-    ]
-    return text.replace(new RegExp("\\b("+stopwords.join("|")+")\\b", "g"), "");
-}
