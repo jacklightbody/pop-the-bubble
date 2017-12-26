@@ -12,48 +12,67 @@ chrome.tabs.query({
 });
 
 chrome.extension.onMessage.addListener(function(request, messageSender, sendResponse) {
-    var messageDiv = document.getElementById("pop-the-bubble-message");
-
+    var messageDiv = document.getElementById("tos-message");
+    var processing = document.getElementById("tos-default");
+    messageDiv.style.display = "block";
+    processing.style.display = "none";
     if(request.action == "notarticle"){
-        messageDiv.innerHTML = "This Page is not an Article";
+        messageDiv.innerHTML = "This page is not an article";
     }else if(request.action == "sentiments"){
+        var intro = document.getElementById("tos-intro");
         var extremeTopic = request.mostExtremeTopic;
         var extremeSentiment = request.mostExtremeSentiment;
-        var partialMessage = "You've read ";
-        var adj;
-        var positiveSentiment = extremeSentiment > 0;
-        if(Math.abs(extremeSentiment) < 20){
-            adj = "a good "
-            if(Math.abs(extremeSentiment) < 10){
-                adj = "an excellent "
-            }
-            partialMessage += adj +"balance of articles about "+extremeTopic+". Way to go!";
-        }else if(Math.abs(extremeSentiment) < 50){
-            adj = "mostly ";
-            if(positiveSentiment){
-                adj += "positive ";
+        intro.innerHTML = getMainMessage(extremeTopic, extremeSentiment);
 
-            }else{
-                adj += "negative ";
-            }
-            partialMessage += adj +" articles about "+extremeTopic+"."
-            partialMessage += " Maybe try searching for terms like "+getSearchLink(extremeTopic, positiveSentiment);
-        }else {
-            adj = "almost exclusively ";
-            if(positiveSentiment){
-                adj += "positive ";
-
-            }else{
-                adj += "negative ";
-            }
-            partialMessage += adj +" articles about "+extremeTopic+"."
-            partialMessage += " You're definitely in an echo chamber, if you want to escape";
-            partialMessage +=  "then try searching for things like "+getSearchLink(extremeTopic, positiveSentiment);
-            partialMessage += ". You just might learn something new";
-        }
-        messageDiv.innerHTML = partialMessage;
     }
 });
+function getMainMessage(topic, sentiment){
+    var partialMessage = "You've read ";
+    var adj;
+    var positiveSentiment = sentiment > 0;
+    if(Math.abs(sentiment) < 20){
+        adj = "a good "
+        if(Math.abs(sentiment) < 10){
+            adj = "an excellent "
+        }
+        partialMessage += adj +"balance of articles about "+topic+". Way to go!";
+    }else if(Math.abs(sentiment) < 50){
+        adj = "mostly ";
+        if(positiveSentiment){
+            adj += "positive ";
+
+        }else{
+            adj += "negative ";
+        }
+        partialMessage += adj +" articles about "+topic+"."
+        partialMessage += " Maybe try searching for terms like "+getSearchLink(topic, positiveSentiment);
+    }else {
+        adj = "almost exclusively ";
+        if(positiveSentiment){
+            adj += "positive ";
+
+        }else{
+            adj += "negative ";
+        }
+        partialMessage += adj +" articles about "+topic+"."
+        partialMessage += " You're definitely in an echo chamber, if you want to escape";
+        partialMessage +=  "then try searching for things like "+getSearchLink(topic, positiveSentiment);
+        partialMessage += ". You just might learn something new";
+    }
+    return partialMessage;
+}
+function getBreakdown(sentiments){
+    var topic;
+    var sentiment;
+    var outHtml
+    sentiments.forEach(function(item)){
+        topic = item[0];
+        sentiment = item[1];
+    }
+}
+function getSentimentDetail(topic, sentiment){
+    var slider = "<input type='range' min='-100' max='100' value='"+sentiment+"'' disabled='true' class='slider'>";
+}
 function getSearchLink(topic, positiveSentiment){
     if(positiveSentiment){
         topic += " advantages";

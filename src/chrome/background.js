@@ -23,11 +23,11 @@ let stopwords = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "y
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.pageLoaded) {
-            console.log("2")
+            console.log("Page Loaded")
             processPage(request.doc, request.loc);
         }
         if (request.action == "getSentiments"){
-            console.log("1")
+            console.log("Popup Opened")
             processPage(false, request.url);
         }
     }
@@ -91,7 +91,7 @@ function updateExtensionInfo(sentiments){
     var sentiment = getMostExtremeSentiment(sentiments);
     var sentimentTopic = sentiment[0];
     sentiment = sentiment[1];
-        chrome.runtime.sendMessage({
+    chrome.runtime.sendMessage({
         action: "sentiments", 
         sentiments: sentiments,
         mostExtremeTopic: sentimentTopic,
@@ -116,8 +116,8 @@ function updateIcon(sentiment){
     var postiveY = 50 - (sentiment/2)
     var negativeY = 50 + (sentiment/2)
     ctx.beginPath();
-    ctx.moveTo(100, negativeY);
-    ctx.lineTo(0, postiveY);
+    ctx.moveTo(100, postiveY);
+    ctx.lineTo(0, negativeY);
     ctx.lineWidth=5;
     ctx.stroke();
     chrome.browserAction.setIcon({imageData:ctx.getImageData(0, 0, canvas.width,canvas.height)});
@@ -164,26 +164,32 @@ function removeImages(doc){
     }
 }
 
-// does the meat of the work, gets all the topics
-// and their associated sentiments
+// does the meat of the work, gets all the associated sentiments for each topic
 function getTopicSentiments(text, topicList){
     var nlpText = nlp(text);
     var sentences = nlpText.sentences().out("array");
+    var sentiment = new Sentimood();
+
 
     // get the most frequent n-grams and map so each has a sentiment of 0
     // saves us a check later on
+    // also get the sentiment for each topic to normalize it
+    // so that the sentiment of the topic itself doesn't effect the sentiment of the sentences
+    // so for example a topic like negative prices will have a positive normalized score
+    topicSentimentNormalizers = {}
     var topicSentiments = {}
     topicList.forEach(function(topic){
         topicSentiments[topic] = 0;
+        topicSentimentNormalizers[topic] = -1* sentiment.analyze(topic);
     });
     //declare all our vars
     var add;
+    var normalizedAdd;
     var sentenceSentiment;
     var substrings;
     var occurrences;
     var i;
     var j;
-    var sentiment = new Sentimood();
 
 
     // we want to go sentence by sentence
@@ -201,23 +207,30 @@ function getTopicSentiments(text, topicList){
         // we want joe to have a positive sentiment, and bob a negative
         // not both to have a neutral sentiment
         for(j = 0; j < topicList.length; j+=1){
+            normalizedAdd = add + topicSentimentNormalizers[topicList[j]]
             substrings = sentences[i].split(topicList[j]);
             occurrences = substrings.length - 1;
             if(occurrences > 0){
-                topicSentiments[topicList[j]] += add;
-
-                // just set an artificial cap on it so one article doesn't skew too much
-                if(topicSentiments[topicList[j]] > 20){
-                    topicSentiments[topicList[j]] = 20;
-                }else if(topicSentiments[topicList[j]] < -20){
-                    topicSentiments[topicList[j]] = -20;
-                }
+                topicSentiments[topicList[j]] += normalizedAdd;
             }
         }
     }
+    topicSentiments = capSentiments(topicSentiments)
     return topicSentiments;
 }
-
+// simple helper to limit the impact of any one article
+// by capping all sentiments from that one article to the range -cap to cap
+function capSentiments(sentiments, cap = 20){
+    Object.keys(sentiments).forEach(function(key) {
+        // just set an artificial cap on it so one article doesn't skew too much
+        if(sentiments[key] > cap){
+            sentiments[key] = cap;
+        }else if(sentiments[key] < -1 * cap){
+            sentiments[key] = -1 * cap;
+        }
+    });
+    return sentiments
+}
 // get our top topics from all the possible topics and their frequencies
 // we only want to keep topics if they contain a noun
 function filterTopics(topics, keep = 5){
