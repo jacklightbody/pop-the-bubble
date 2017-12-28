@@ -1,13 +1,13 @@
 .slider {
     -webkit-appearance: none;
-    width: 200px;
+    width: 300px;
     height: 5px;
     background: #E0E0E0;
     outline: none;
 }
 
 .slider-container{
-    width: 200px;
+    width: 300px;
 }
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -25,7 +25,10 @@
     float: left;
 }
 .slider-middle{
-    margin-left: 100px;
-    margin-right: 100px;
+    margin-left: 150px;
+    margin-right: 150px;
     position: absolute;
+}
+hr:last-of-type{
+    display:none;
 }

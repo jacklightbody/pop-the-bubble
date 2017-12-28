@@ -56,7 +56,6 @@ async function processPage(doc, url){
                 let article = extractText(doc);
                 console.log(article);
                 if(article.split(" ").length > wordThreshold){
-                    console.log("rake")
                     var topics = await rake(
                         article, 
                         stopwords, 
@@ -66,6 +65,9 @@ async function processPage(doc, url){
                     );
                     topics = filterTopics(topics, keepKeywords);
                     console.log(topics);
+                    if(topics.length < 1){
+                        throw "Article Doesn't Contain any Topics";
+                    }
                     sentiments = getTopicSentiments(article, topics);
                     console.log(sentiments);
                     updateSiteSentiments(url, sentiments, function(sentiments){
@@ -180,7 +182,7 @@ function getTopicSentiments(text, topicList){
     var topicSentiments = {}
     topicList.forEach(function(topic){
         topicSentiments[topic] = 0;
-        topicSentimentNormalizers[topic] = -1* sentiment.analyze(topic);
+        topicSentimentNormalizers[topic] = 0 | -1* sentiment.analyze(topic).score;
     });
     //declare all our vars
     var add;
@@ -190,7 +192,6 @@ function getTopicSentiments(text, topicList){
     var occurrences;
     var i;
     var j;
-
 
     // we want to go sentence by sentence
     // so that we track whether each topic is good or bad
@@ -207,7 +208,7 @@ function getTopicSentiments(text, topicList){
         // we want joe to have a positive sentiment, and bob a negative
         // not both to have a neutral sentiment
         for(j = 0; j < topicList.length; j+=1){
-            normalizedAdd = add + topicSentimentNormalizers[topicList[j]]
+            normalizedAdd = add + topicSentimentNormalizers[topicList[j]];
             substrings = sentences[i].split(topicList[j]);
             occurrences = substrings.length - 1;
             if(occurrences > 0){
@@ -233,18 +234,25 @@ function capSentiments(sentiments, cap = 20){
 }
 // get our top topics from all the possible topics and their frequencies
 // we only want to keep topics if they contain a noun
-function filterTopics(topics, keep = 5){
+function filterTopics(topics, keep = 5, minScore = 3){
     var searchString;
     var i;
     var itemWords;
     var topicList = [];
-    var finalTopics = []
+    var finalTopics = [];
+    // covert our obj to an array 
+    // so {key: score} -> [[key, score]]
     Object.keys(topics).forEach(function(key){
         topicList.push([key, topics[key]]);
     })
     topicList = topicList.filter(function(item) {
+        // first filter to make sure that our topics have a min score above minScore
+        // otherwise there aren't really any topics
+        if(item[1] < minScore){
+            return false;
+        }
+        // then make sure that each topic has a noun somewhere in it
         item = nlp(item[0]).list[0];
-
         for(i = 0; i < item.terms.length; i+=1){
             if(getPartOfSpeech(item.terms[i]) == "noun"){
                 return true;

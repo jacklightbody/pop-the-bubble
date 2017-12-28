@@ -17,13 +17,14 @@ chrome.extension.onMessage.addListener(function(request, messageSender, sendResp
     messageDiv.style.display = "block";
     processing.style.display = "none";
     if(request.action == "notarticle"){
-        messageDiv.innerHTML = "This page is not an article";
+        messageDiv.innerHTML = "This page is not an article or has no topics";
     }else if(request.action == "sentiments"){
         var intro = document.getElementById("tos-intro");
+        var detailed = document.getElementById("tos-detailed");
         var extremeTopic = request.mostExtremeTopic;
         var extremeSentiment = request.mostExtremeSentiment;
         intro.innerHTML = getMainMessage(extremeTopic, extremeSentiment);
-
+        detailed.innerHTML = getBreakdown(request.sentiments)
     }
 });
 function getMainMessage(topic, sentiment){
@@ -62,16 +63,28 @@ function getMainMessage(topic, sentiment){
     return partialMessage;
 }
 function getBreakdown(sentiments){
+    console.log(sentiments);
+
     var topic;
     var sentiment;
-    var outHtml
-    sentiments.forEach(function(item)){
+    var outHtml = "";
+    sentiments.forEach(function(item){
+        console.log(item);
         topic = item[0];
         sentiment = item[1];
-    }
+        outHtml+=getSentimentDetail(topic, sentiment);
+    });
+    return outHtml;
 }
 function getSentimentDetail(topic, sentiment){
-    var slider = "<input type='range' min='-100' max='100' value='"+sentiment+"'' disabled='true' class='slider'>";
+    var resultHtml = "<b>Topic: "+topic+"</b>";
+    resultHtml += "<div class='slidecontainer clearfix'>"
+    resultHtml +="<input type='range' min='-100' max='100' value='"+sentiment+"'' disabled='true' class='slider'>";
+    resultHtml +="<div class='slider-neg-extreme'>-100</div>";
+    resultHtml +="<div class='slider-middle'>0</div>";
+    resultHtml +="<div class='slider-pos-extreme'>100</div>";
+    resultHtml +="</div><br/><hr/>";
+    return resultHtml;
 }
 function getSearchLink(topic, positiveSentiment){
     if(positiveSentiment){
