@@ -22,6 +22,16 @@ pop-the-bubble-data: {
         "article topic 1": 1,
         "topic 2": -3,
         "another topic": 3
+    },
+    ignored {
+        topics {
+            "ignored topic 1": 0,
+            "ignored topic 2": 0 
+        }, 
+        domains {
+            "mail.google.com": 0,
+            "myprivatesite.com": 0
+        }
     }
     lastCleaned: 121231231230
 }
@@ -63,6 +73,9 @@ function updateSiteSentiments(url, sentiments, callback=false){
 }
 
 function getSiteSentiments(userData, url){
+    if(siteShouldBeIgnored(userData, url)){
+        return [];
+    }
     if(url in userData.sites){
         var result = [];
         userData.sites[url].topics.forEach(function(topic){
@@ -76,6 +89,9 @@ function getSiteSentiments(userData, url){
     return false;
 }
 function updateUserData(userData, url, sentiments){
+    if(siteShouldBeIgnored(userData, url)){
+        return userData;
+    }
     if(url in userData.sites){
         userData.sites[url].timestamp = Date.now();
     }else{
@@ -87,19 +103,58 @@ function updateUserData(userData, url, sentiments){
     }
     return userData;
 }
+function removeSite(userData, url){
+    // first reverse the sentiments
+    userData = updateTopicSentiments(userData, userData.sites[url].topics, false)
+    // and then remove the site from our record
+    delete userData.sites[url];
+    return userData;
+}
 function cleanOldData(userData, daysBack = 14){
     var oldTimestamp = Date.now() - (daysBack * 24 * 60 * 60 * 1000);
-    for(var i = userData.sites.length - 1; i >= 0; i--){
-        if(userData.sites[i].timestamp < oldTimestamp){
+    Object.keys(userData.sites).forEach(function(url) {
+        if(userData.sites[url].timestamp < oldTimestamp){
             // the site was visited more than days back ago
             // so we want to remove it from the record
-            // first reverse the sentiments
-            userData = updateTopicSentiments(userData, userData.sites[i].topics, false)
-            // and then remove the site from our record
-            userData.sites.splice(i, 1);
+            userData = removeSite(userData, url);
         }
-    }
+    });
     return userData
+}
+// These next few functions are sisters, in that they are triggered when the user ignores an domain or topic
+// and we need to go over all our old information and see if any of it needs to be cleaned out
+// to reflect this new preference
+function cleanIgnoredDomains(userData){
+    Object.keys(userData.sites).forEach(function(url) {
+        if(siteShouldBeIgnored(userData, url)){
+            // the user just told us ignore all data from this domain
+            // so we need to remove it 
+           userData = removeSite(userData, url)
+        }
+    });
+    return userData;
+}
+function cleanIgnoredTopics(userData){
+    Object.keys(userData.sites).forEach(function(url) {
+        Object.keys(userData.sites[url].topics).forEach(function(topic) {
+            if(topicShouldBeIgnored(userData, topic)){
+                delete userData.sites[url][topic];
+            }
+        });
+    });
+    Object.keys(userData.topics).forEach(function(topic) {
+        if(topicShouldBeIgnored(userData, topic)){
+            delete userData.topics[topic];
+        }
+    });
+    return userData;
+}
+function siteShouldBeIgnored(userData, url){
+    var host = URL(url).hostname;
+    return (host in userData.ignored.domains);
+}
+function topicShouldBeIgnored(userData, topic){
+    return (topic in userData.ignored.topics);
 }
 function updateTopicSentiments(userData, sentiments, add=true){
     var mult = add ? 1 : -1;
