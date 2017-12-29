@@ -77,7 +77,7 @@ function getBreakdown(sentiments){
     return outHtml;
 }
 function getSentimentDetail(topic, sentiment){
-    var resultHtml = "<b>Topic: "+topic+"</b>";
+    var resultHtml = "<b>Topic: "+topic.capitalize()+"</b>";
     resultHtml += "<div class='slidecontainer clearfix'>"
     resultHtml +="<input type='range' min='-100' max='100' value='"+sentiment+"'' disabled='true' class='slider'>";
     resultHtml +="<div class='slider-neg-extreme'>-100</div>";

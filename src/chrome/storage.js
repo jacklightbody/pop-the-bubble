@@ -41,15 +41,32 @@ var baseDS = {sites: {}, topics: {}, lastCleaned: Date.now()};
 var storageDefault = {}
 storageDefault[storageKey] = baseDS
 
+// simple wrapper for all our functionality to handle the loading and saving of the data
+// from and back into chrome storage
+function loadSaveData(callback){
+    // specify default values here so that if we haven't saved anything yet it doesn't fail
+    chrome.storage.local.get(storageDefault, function(el){
+        var userData = el[storageKey];
+        userData = callback(userData);
+        var setData = {}
+        setData[storageKey] = userData;
+        chrome.storage.local.set(setData, function(){
+            console.log("Ignore Preferences Saved Successfully");
+            console.log(userData)
+        });
+    });
+}
+
 function getSite(url, callback){
     chrome.storage.local.get(storageDefault, function(el){
         callback(getSiteSentiments(el[storageKey], url));
     });
 }
 
+// does the meat of the updating topic sentiments in the right flow
+// lets loadSaveData interact with chrome
 function updateSiteSentiments(url, sentiments, callback=false){
-    // specify default values here so that if we haven't saved anything yet it doesn't fail
-    chrome.storage.local.get(storageDefault, function(el){
+    loadSaveData(function(userData){
         var userData = el[storageKey];
 
         // first clean out the old data if needed
@@ -61,14 +78,11 @@ function updateSiteSentiments(url, sentiments, callback=false){
         userData = updateUserData(userData, url, sentiments);
 
         if(callback){
+            // at this stage we don't let anything modify our userData
+            // but they can use it to update our icon graphics etc.
             callback(getSiteSentiments(userData, url));
         }
-        var setData = {}
-        setData[storageKey] = userData;
-        chrome.storage.local.set(setData, function(){
-            console.log("Data Saved Successfully");
-            console.log(userData)
-        });
+        return userData;
     });
 }
 
@@ -124,38 +138,38 @@ function cleanOldData(userData, daysBack = 14){
 // These next few functions are sisters, in that they are triggered when the user ignores an domain or topic
 // and we need to go over all our old information and see if any of it needs to be cleaned out
 // to reflect this new preference
-function cleanIgnoredDomains(userData){
-    Object.keys(userData.sites).forEach(function(url) {
-        if(siteShouldBeIgnored(userData, url)){
-            // the user just told us ignore all data from this domain
-            // so we need to remove it 
-           userData = removeSite(userData, url)
-        }
-    });
-    return userData;
 }
-function cleanIgnoredTopics(userData){
-    Object.keys(userData.sites).forEach(function(url) {
-        Object.keys(userData.sites[url].topics).forEach(function(topic) {
-            if(topicShouldBeIgnored(userData, topic)){
-                delete userData.sites[url][topic];
+function ignoreDomain(domain){
+    loadSaveData(function(userData){
+        Object.keys(userData.sites).forEach(function(url) {
+            if(URL(url).hostname == domain){
+                // the user just told us ignore all data from this domain
+                // so we need to remove it 
+               userData = removeSite(userData, url)
             }
         });
+        return userData;
     });
-    Object.keys(userData.topics).forEach(function(topic) {
-        if(topicShouldBeIgnored(userData, topic)){
-            delete userData.topics[topic];
-        }
+}
+function ignoreTopic(ignoreTopic){
+    loadSaveData(function(userData){
+        Object.keys(userData.sites).forEach(function(url) {
+            Object.keys(userData.sites[url].topics).forEach(function(topic) {
+                if(topic == ignoreTopic){
+                    delete userData.sites[url][topic];
+                }
+            });
+        });
+        Object.keys(userData.topics).forEach(function(topic) {
+            if(topic == ignoreTopic){
+                delete userData.topics[topic];
+            }
+        });
+        return userData;
     });
-    return userData;
 }
-function siteShouldBeIgnored(userData, url){
-    var host = URL(url).hostname;
-    return (host in userData.ignored.domains);
-}
-function topicShouldBeIgnored(userData, topic){
-    return (topic in userData.ignored.topics);
-}
+
+
 function updateTopicSentiments(userData, sentiments, add=true){
     var mult = add ? 1 : -1;
     var add;
@@ -164,17 +178,16 @@ function updateTopicSentiments(userData, sentiments, add=true){
         add = mult * el[1];
         topicName = el[0]
         if(topicName in userData.topics){
-            userData.topics[topicName] += add;
-            // Set a cap on how extreme these views can really be
-            // at a certain point it doesn't actually do much
-            if(userData.topics[topicName] > 100){
-                userData.topics[topicName] = 100;
-            }else if(userData.topics[topicName] < -100){
-                userData.topics[topicName] = -100;
-            }
+            userData.topics[topicName] = capSentiment(userData.topics[topicName] + add)
         }else{
             userData.topics[topicName] = add;
         }
     });
     return userData;
+}
+
+// Set a cap on how extreme these views can really be
+// at a certain point it doesn't actually do much to read one more article
+function capSentiment(score, cap){
+    return score <= -1 * cap ? -1*min  : score >= cap ? cap : score;
 }
