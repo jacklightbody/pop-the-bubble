@@ -63,6 +63,7 @@ async function processPage(doc, url){
                         maxKeywordWordsLength, 
                         minKeywordFrequency
                     );
+                    console.log(topics)
                     topics = filterTopics(topics, keepKeywords);
                     console.log(topics);
                     if(topics.length < 1){
@@ -232,6 +233,10 @@ function capSentiments(sentiments, cap = 20){
     });
     return sentiments
 }
+// just normalize the topics a bit, stripping out quote marks and the like
+function cleanTopic(topic){
+    return topic.replace(/[^\w ']/g, '');
+}
 // get our top topics from all the possible topics and their frequencies
 // we only want to keep topics if they contain a noun
 function filterTopics(topics, keep = 5, minScore = 3){
@@ -243,7 +248,7 @@ function filterTopics(topics, keep = 5, minScore = 3){
     // covert our obj to an array 
     // so {key: score} -> [[key, score]]
     Object.keys(topics).forEach(function(key){
-        topicList.push([key, topics[key]]);
+        topicList.push([cleanTopic(key), topics[key]]);
     })
     topicList = topicList.filter(function(item) {
         // first filter to make sure that our topics have a min score above minScore

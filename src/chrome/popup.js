@@ -12,6 +12,7 @@ chrome.tabs.query({
 });
 
 chrome.extension.onMessage.addListener(function(request, messageSender, sendResponse) {
+    console.log(request);
     var messageDiv = document.getElementById("tos-message");
     var processing = document.getElementById("tos-default");
     messageDiv.style.display = "block";
@@ -68,24 +69,35 @@ function getBreakdown(sentiments){
     var topic;
     var sentiment;
     var outHtml = "";
+    var outCss = "<style type='text/css'>";
     sentiments.forEach(function(item){
         console.log(item);
         topic = item[0];
         sentiment = item[1];
         outHtml+=getSentimentDetail(topic, sentiment);
+        outCss+=getSentimentCss(sentiment);
     });
+    outCss+="</style>";
+    outHtml=outCss+outHtml;
     return outHtml;
 }
 function getSentimentDetail(topic, sentiment){
-    var resultHtml = "<b>Topic: "+topic.capitalize()+"</b>";
-    resultHtml += "<div class='slidecontainer clearfix'>"
-    resultHtml +="<input type='range' min='-100' max='100' value='"+sentiment+"'' disabled='true' class='slider'>";
+    var resultHtml = "<div class='topic-breakdown clearfix'>";
+    resultHtml +="<b>Topic: "+topic+"</b><br/>";
+    resultHtml += "<div class='slider-container'>"
+    resultHtml +="<input type='range' min='-100' max='100' value='"+sentiment+"' disabled='true' class='slider sentiment"+Math.abs(sentiment)+"'>";
     resultHtml +="<div class='slider-neg-extreme'>-100</div>";
     resultHtml +="<div class='slider-middle'>0</div>";
     resultHtml +="<div class='slider-pos-extreme'>100</div>";
-    resultHtml +="</div><br/><hr/>";
+    resultHtml +="</div><div class='utilities'><button>Ignore Topic</button></div></div>";
     return resultHtml;
 }
+function getSentimentCss(score){
+    score = Math.abs(score);
+    h =  Math.floor((100 - score) * 120 / 100);
+    return ".sentiment"+score+"::-webkit-slider-thumb  { background: hsl("+h+", 100%, 40%)}\n";
+}
+
 function getSearchLink(topic, positiveSentiment){
     if(positiveSentiment){
         topic += " advantages";

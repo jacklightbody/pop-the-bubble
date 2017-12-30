@@ -37,38 +37,38 @@ pop-the-bubble-data: {
 }
 */
 var storageKey = "pop-the-bubble-data";
-var baseDS = {sites: {}, topics: {}, lastCleaned: Date.now()};
+var baseDS = {sites: {}, topics: {}, ignored:{topics:{}, domains:{}}, lastCleaned: Date.now()};
 var storageDefault = {}
 storageDefault[storageKey] = baseDS
 
-// simple wrapper for all our functionality to handle the loading and saving of the data
-// from and back into chrome storage
-function loadSaveData(callback){
+// simple wrapper for all our functionality to handle the of the data
+// to abstract away the chrome storage parts of it
+function loadData(callback){
     // specify default values here so that if we haven't saved anything yet it doesn't fail
     chrome.storage.local.get(storageDefault, function(el){
         var userData = el[storageKey];
-        userData = callback(userData);
-        var setData = {}
-        setData[storageKey] = userData;
-        chrome.storage.local.set(setData, function(){
-            console.log("Ignore Preferences Saved Successfully");
-            console.log(userData)
-        });
+        callback(userData);
     });
 }
-
+// same thing as above but for saving data
+function saveData(userData){
+    var setData = {}
+    setData[storageKey] = userData;
+    chrome.storage.local.set(setData, function(){
+        console.log("Ignore Preferences Saved Successfully");
+        console.log(userData)
+    });
+}
 function getSite(url, callback){
-    chrome.storage.local.get(storageDefault, function(el){
-        callback(getSiteSentiments(el[storageKey], url));
+    loadData(function(userData){
+        callback(getSiteSentiments(userData, url));
     });
 }
 
 // does the meat of the updating topic sentiments in the right flow
 // lets loadSaveData interact with chrome
 function updateSiteSentiments(url, sentiments, callback=false){
-    loadSaveData(function(userData){
-        var userData = el[storageKey];
-
+    loadData(function(userData){
         // first clean out the old data if needed
         if(userData.lastCleaned < Date.now() - 24 * 60 * 60 * 1000){
             userData = cleanOldData(userData);
@@ -82,7 +82,7 @@ function updateSiteSentiments(url, sentiments, callback=false){
             // but they can use it to update our icon graphics etc.
             callback(getSiteSentiments(userData, url));
         }
-        return userData;
+        saveData(userData);
     });
 }
 
@@ -138,21 +138,20 @@ function cleanOldData(userData, daysBack = 14){
 // These next few functions are sisters, in that they are triggered when the user ignores an domain or topic
 // and we need to go over all our old information and see if any of it needs to be cleaned out
 // to reflect this new preference
-}
 function ignoreDomain(domain){
-    loadSaveData(function(userData){
+    loadData(function(userData){
         Object.keys(userData.sites).forEach(function(url) {
-            if(URL(url).hostname == domain){
+            if(new URL(url).hostname == domain){
                 // the user just told us ignore all data from this domain
                 // so we need to remove it 
                userData = removeSite(userData, url)
             }
         });
-        return userData;
+        saveData(userData);
     });
 }
 function ignoreTopic(ignoreTopic){
-    loadSaveData(function(userData){
+    loadData(function(userData){
         Object.keys(userData.sites).forEach(function(url) {
             Object.keys(userData.sites[url].topics).forEach(function(topic) {
                 if(topic == ignoreTopic){
@@ -165,10 +164,21 @@ function ignoreTopic(ignoreTopic){
                 delete userData.topics[topic];
             }
         });
-        return userData;
+        saveData(userData);
     });
 }
 
+function siteShouldBeIgnored(userData, url){
+    try{
+        var host = new URL(url).hostname;
+        return (host in userData.ignored.domains);
+    }catch(err){
+        return false;
+    }
+}
+function topicShouldBeIgnored(userData, topic){
+    return (topic in userData.ignored.topics);
+}
 
 function updateTopicSentiments(userData, sentiments, add=true){
     var mult = add ? 1 : -1;
