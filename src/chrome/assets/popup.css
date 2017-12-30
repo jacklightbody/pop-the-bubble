@@ -57,6 +57,12 @@
   font-weight: bold;
   border-radius: 5px;
 }
+.utilities button:focus {
+    outline: none;
+}
+.utilities button:active{
+    background-color: #e6e6e6;
+}
 .topic-breakdown b{
     text-transform: capitalize;
 }

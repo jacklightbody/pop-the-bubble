@@ -55,7 +55,7 @@ function saveData(userData){
     var setData = {}
     setData[storageKey] = userData;
     chrome.storage.local.set(setData, function(){
-        console.log("Ignore Preferences Saved Successfully");
+        console.log("Data Saved Successfully");
         console.log(userData)
     });
 }
@@ -63,6 +63,7 @@ function getSite(url, callback){
     loadData(function(userData){
         callback(getSiteSentiments(userData, url));
     });
+    chrome.storage.local.clear();
 }
 
 // does the meat of the updating topic sentiments in the right flow
@@ -82,6 +83,7 @@ function updateSiteSentiments(url, sentiments, callback=false){
             // but they can use it to update our icon graphics etc.
             callback(getSiteSentiments(userData, url));
         }
+        console.log("test")
         saveData(userData);
     });
 }
@@ -151,10 +153,15 @@ function ignoreDomain(domain){
     });
 }
 function ignoreTopic(ignoreTopic){
+    console.log("ignore");
+    console.log(ignoreTopic)
     loadData(function(userData){
+        console.log(ignoreTopic);
         Object.keys(userData.sites).forEach(function(url) {
             Object.keys(userData.sites[url].topics).forEach(function(topic) {
                 if(topic == ignoreTopic){
+                    console.log(topic)
+
                     delete userData.sites[url][topic];
                 }
             });
@@ -164,6 +171,8 @@ function ignoreTopic(ignoreTopic){
                 delete userData.topics[topic];
             }
         });
+        userData.ignored.topics[ignoreTopic] = 0;
+        console.log(userData)
         saveData(userData);
     });
 }

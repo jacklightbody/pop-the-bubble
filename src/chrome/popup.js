@@ -25,10 +25,21 @@ chrome.extension.onMessage.addListener(function(request, messageSender, sendResp
         var extremeTopic = request.mostExtremeTopic;
         var extremeSentiment = request.mostExtremeSentiment;
         intro.innerHTML = getMainMessage(extremeTopic, extremeSentiment);
-        detailed.innerHTML = getBreakdown(request.sentiments)
+        detailed.innerHTML = getBreakdown(request.sentiments);
+        var ignores = document.getElementsByClassName("ignore-button");
+        for(var i = 0; i < ignores.length; i++) {
+            var button = ignores[i];
+            button.addEventListener('click', function() {
+                ignoreTopic(button.dataset.topic)
+            });
+        }
     }
 });
+
 function getMainMessage(topic, sentiment){
+    if(sentiment == 0){
+        return "There are no divisive topics on this page"
+    }
     var partialMessage = "You've read ";
     var adj;
     var positiveSentiment = sentiment > 0;
@@ -71,7 +82,6 @@ function getBreakdown(sentiments){
     var outHtml = "";
     var outCss = "<style type='text/css'>";
     sentiments.forEach(function(item){
-        console.log(item);
         topic = item[0];
         sentiment = item[1];
         outHtml+=getSentimentDetail(topic, sentiment);
@@ -89,9 +99,10 @@ function getSentimentDetail(topic, sentiment){
     resultHtml +="<div class='slider-neg-extreme'>-100</div>";
     resultHtml +="<div class='slider-middle'>0</div>";
     resultHtml +="<div class='slider-pos-extreme'>100</div>";
-    resultHtml +="</div><div class='utilities'><button>Ignore Topic</button></div></div>";
+    resultHtml +="</div><div class='utilities'><button class='ignore-button' data-topic='"+topic+"'>Ignore Topic</button></div></div>";
     return resultHtml;
 }
+
 function getSentimentCss(score){
     score = Math.abs(score);
     h =  Math.floor((100 - score) * 120 / 100);
