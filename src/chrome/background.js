@@ -2,7 +2,8 @@ let wordThreshold = 100;
 let minKeywordCharLength = 3;
 let maxKeywordWordsLength = 5; 
 let minKeywordFrequency = 3; 
-let keepKeywords = 5
+let keepKeywords = 5;
+let minLineWords = 10;
 let stopwords = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you",
     "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she",
     "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs",
@@ -154,6 +155,17 @@ function extractText(doc){
     article = _.unescape(article);
     unescaped.innerHTML = article
     article = unescaped.textContent || unescaped.innerText || article;
+    var articleLines = article.split("\n");
+    article = "";
+    // too many image descriptions or social mdeia stuff was getting scraped in
+    // take care of that here by mandating that each P has at least 10 words
+    articleLines.forEach(function(line){
+        var words = line.split(" ");
+        if(words.length > minLineWords){
+            article += line +" \n";
+        }
+    });
+
     return article;
 }
 
@@ -245,23 +257,36 @@ function filterTopics(topics, keep = 5, minScore = 3){
     var itemWords;
     var topicList = [];
     var finalTopics = [];
+    var nounFound;
+    var verbCount;
+    var pos;
     // covert our obj to an array 
     // so {key: score} -> [[key, score]]
     Object.keys(topics).forEach(function(key){
         topicList.push([cleanTopic(key), topics[key]]);
     })
+    console.log(topicList);
     topicList = topicList.filter(function(item) {
         // first filter to make sure that our topics have a min score above minScore
         // otherwise there aren't really any topics
         if(item[1] < minScore){
             return false;
         }
+        noun = false;
+        verbCount = 0;
         // then make sure that each topic has a noun somewhere in it
+        // and that the ratio of verbs to other words is less than 1:1
         item = nlp(item[0]).list[0];
         for(i = 0; i < item.terms.length; i+=1){
-            if(getPartOfSpeech(item.terms[i]) == "noun"){
-                return true;
+            pos = getPartOfSpeech(item.terms[i]);
+            if(pos == "noun"){
+                noun = true;
+            }else if(pos == "verb"){
+                verbCount+=1;
             }
+        }
+        if(noun && verbCount/item.terms.length < .5){
+            return true;
         }
         return false;
     });

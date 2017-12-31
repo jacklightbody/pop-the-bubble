@@ -1,40 +1,74 @@
-chrome.tabs.query({
-    active: true,
-    currentWindow: true
-  }, function (tabs) {
-    // ...and send a request for the DOM info...
-    tabs.forEach(function(tab){
-        if(tab.active){
-            chrome.runtime.sendMessage({action: "getSentiments", url: tab.url});
-            return;
-        }
+loadPopup();
+function loadPopup(){
+    getCurrentUrl(function(url){
+        chrome.runtime.sendMessage({action: "getSentiments", url: url});   
+        return;
     });
-});
-
+}
+function getCurrentUrl(callback){
+    chrome.tabs.query({
+        active: true,
+        currentWindow: true
+      }, function (tabs) {
+        // ...and send a request for the DOM info...
+        tabs.forEach(function(tab){
+            if(tab.active){
+                callback(tab.url);                
+            }
+        });
+    });
+}
 chrome.extension.onMessage.addListener(function(request, messageSender, sendResponse) {
-    console.log(request);
+    generateHtml(request);
+    attachListeners(request);
+});
+function generateHtml(request){
     var messageDiv = document.getElementById("tos-message");
     var processing = document.getElementById("tos-default");
-    messageDiv.style.display = "block";
-    processing.style.display = "none";
     if(request.action == "notarticle"){
-        messageDiv.innerHTML = "This page is not an article or has no topics";
+        messageDiv.innerHTML = "This page is not an article or has no non-ignored topics";
     }else if(request.action == "sentiments"){
         var intro = document.getElementById("tos-intro");
         var detailed = document.getElementById("tos-detailed");
         var extremeTopic = request.mostExtremeTopic;
         var extremeSentiment = request.mostExtremeSentiment;
         intro.innerHTML = getMainMessage(extremeTopic, extremeSentiment);
-        detailed.innerHTML = getBreakdown(request.sentiments);
-        var ignores = document.getElementsByClassName("ignore-button");
-        for(var i = 0; i < ignores.length; i++) {
-            var button = ignores[i];
-            button.addEventListener('click', function() {
-                ignoreTopic(button.dataset.topic)
-            });
+        if(request.sentiments.length > 0){
+            detailed.innerHTML = getBreakdown(request.sentiments);
+        }else{
+            detailed.innerHTML = "There are no non-ignored topics on this page."
         }
     }
-});
+    messageDiv.style.display = "block";
+    processing.style.display = "none";
+}
+function attachListeners(request){
+    var ignores = document.getElementsByClassName("ignore-button");
+    for(var i = 0; i < ignores.length; i++) {
+        var button = ignores[i];
+        button.addEventListener('click', function() {
+            ignoreTopic(button.dataset.topic);
+            loadPopup()
+        });
+    }
+    var more = document.getElementById("more");
+    if(more == null){
+        return;
+    }
+    more.addEventListener('click', function() {
+        document.getElementById("advanced-settings").style.display = "block";
+        more.style.display = "none";
+        var ignore = document.getElementById("ignore-domain");
+        ignore.addEventListener('click', function() {
+            getCurrentUrl(function(url){
+                url = new URL(url);
+                console.log(url.hostname)
+                ignoreDomain(url.hostname);
+                loadPopup();
+            });
+        });
+    });
+}
 
 function getMainMessage(topic, sentiment){
     if(sentiment == 0){
@@ -75,8 +109,6 @@ function getMainMessage(topic, sentiment){
     return partialMessage;
 }
 function getBreakdown(sentiments){
-    console.log(sentiments);
-
     var topic;
     var sentiment;
     var outHtml = "";
@@ -91,9 +123,11 @@ function getBreakdown(sentiments){
     outHtml=outCss+outHtml;
     return outHtml;
 }
+
 function getSentimentDetail(topic, sentiment){
     var resultHtml = "<div class='topic-breakdown clearfix'>";
     resultHtml +="<b>Topic: "+topic+"</b><br/>";
+    resultHtml +="<span>Score: "+sentiment+"</span><br/>";
     resultHtml += "<div class='slider-container'>"
     resultHtml +="<input type='range' min='-100' max='100' value='"+sentiment+"' disabled='true' class='slider sentiment"+Math.abs(sentiment)+"'>";
     resultHtml +="<div class='slider-neg-extreme'>-100</div>";
@@ -111,9 +145,9 @@ function getSentimentCss(score){
 
 function getSearchLink(topic, positiveSentiment){
     if(positiveSentiment){
-        topic += " advantages";
-    }else{
         topic += " disadvantages";
+    }else{
+        topic += " advantages";
     }
     var safeTopic = encodeURIComponent(topic);
     var result = "<a href='https://www.google.com/search?q="+safeTopic+"'>\""+topic+"\"</a>";

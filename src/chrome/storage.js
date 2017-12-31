@@ -45,10 +45,10 @@ storageDefault[storageKey] = baseDS
 // to abstract away the chrome storage parts of it
 function loadData(callback){
     // specify default values here so that if we haven't saved anything yet it doesn't fail
-    chrome.storage.local.get(storageDefault, function(el){
+    chrome.storage.local.get(storageDefault, function(el){        
         var userData = el[storageKey];
         callback(userData);
-    });
+    });    
 }
 // same thing as above but for saving data
 function saveData(userData){
@@ -63,7 +63,6 @@ function getSite(url, callback){
     loadData(function(userData){
         callback(getSiteSentiments(userData, url));
     });
-    chrome.storage.local.clear();
 }
 
 // does the meat of the updating topic sentiments in the right flow
@@ -149,20 +148,16 @@ function ignoreDomain(domain){
                userData = removeSite(userData, url)
             }
         });
+        userData.ignored.domains[domain] = 0;
         saveData(userData);
     });
 }
 function ignoreTopic(ignoreTopic){
-    console.log("ignore");
-    console.log(ignoreTopic)
     loadData(function(userData){
-        console.log(ignoreTopic);
         Object.keys(userData.sites).forEach(function(url) {
-            Object.keys(userData.sites[url].topics).forEach(function(topic) {
-                if(topic == ignoreTopic){
-                    console.log(topic)
-
-                    delete userData.sites[url][topic];
+            userData.sites[url].topics.forEach(function(topic, index, object) {
+                if(topic[0].valueOf() == ignoreTopic.valueOf()){
+                    object.splice(index, 1);
                 }
             });
         });
@@ -172,7 +167,6 @@ function ignoreTopic(ignoreTopic){
             }
         });
         userData.ignored.topics[ignoreTopic] = 0;
-        console.log(userData)
         saveData(userData);
     });
 }
