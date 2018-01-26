@@ -67,6 +67,15 @@ function attachListeners(request){
                 loadPopup();
             });
         });
+        var editor = document.getElementById("edit-topics");
+        editor.addEventListener('click', function() {
+            var editViews = document.getElementsByClassName("edit-mode");
+            var defaultViews = document.getElementsByClassName("view-mode");
+            for (var i = editViews.length - 1; i >= 0; i--) {
+                editViews[i].style.display = "block";
+                defaultViews[i].style.display = "none"
+            }
+        });
     });
 }
 
@@ -125,7 +134,7 @@ function getBreakdown(sentiments){
 }
 
 function getSentimentDetail(topic, sentiment){
-    var resultHtml = "<div class='topic-breakdown clearfix'>";
+    var resultHtml = "<div class='topic-breakdown clearfix'><div class='view-mode'>";
     resultHtml +="<b>Topic: "+topic+"</b><br/>";
     resultHtml +="<span>Score: "+sentiment+"</span><br/>";
     resultHtml += "<div class='slider-container'>"
@@ -134,6 +143,8 @@ function getSentimentDetail(topic, sentiment){
     resultHtml +="<div class='slider-middle'>0</div>";
     resultHtml +="<div class='slider-pos-extreme'>100</div>";
     resultHtml +="</div><div class='utilities'><button class='ignore-button' data-topic='"+topic+"'>Ignore Topic</button></div></div>";
+    resultHtml +="<div class='edit-mode'></div>";
+    resultHtml +="<b>Topic: "+topic+"</b><br/></div>";
     return resultHtml;
 }
 
