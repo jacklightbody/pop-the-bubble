@@ -66,7 +66,7 @@ function getSite(url, callback){
 }
 
 // does the meat of the updating topic sentiments in the right flow
-// lets loadSaveData interact with chrome
+// lets loadData interact with chrome
 function updateSiteSentiments(url, sentiments, callback=false){
     loadData(function(userData){
         // first clean out the old data if needed
@@ -75,14 +75,15 @@ function updateSiteSentiments(url, sentiments, callback=false){
             userData.lastCleaned = Date.now();
         }
         // update the data and set it again
-        userData = updateUserData(userData, url, sentiments);
+        if(!siteShouldBeIgnored(userData, url)){
+            userData = updateUserData(userData, url, sentiments);
+        }
 
         if(callback){
             // at this stage we don't let anything modify our userData
             // but they can use it to update our icon graphics etc.
             callback(getSiteSentiments(userData, url));
         }
-        console.log("test")
         saveData(userData);
     });
 }
@@ -92,11 +93,15 @@ function getSiteSentiments(userData, url){
         return [];
     }
     if(url in userData.sites){
+        // any time we get a site sentiment we're visiting it
+        // update the timestamp associated with it
+        userData.sites[url].timestamp = Date.now();
         var result = [];
         userData.sites[url].topics.forEach(function(topic){
             result.push([
                 topic[0],
-                userData.topics[topic[0]]
+                userData.topics[topic[0]],
+                topic[1] // we want to return the site score as well as overall to allow for editing
             ]);
         });
         return result;
@@ -104,18 +109,16 @@ function getSiteSentiments(userData, url){
     return false;
 }
 function updateUserData(userData, url, sentiments){
-    if(siteShouldBeIgnored(userData, url)){
-        return userData;
-    }
     if(url in userData.sites){
-        userData.sites[url].timestamp = Date.now();
-    }else{
-        var topicList = Object.keys(sentiments).map(function(key) {
-            return [key, sentiments[key]];
-        });
-        userData = updateTopicSentiments(userData, topicList);
-        userData.sites[url] = {topics: topicList, timestamp: Date.now()};
+        // overwrite if we have to
+        // easiest way to do so is just to get rid of what we already have
+        userData = removeSite(userData, url)
     }
+    var topicList = Object.keys(sentiments).map(function(key) {
+        return [key, sentiments[key]];
+    });
+    userData = updateTopicSentiments(userData, topicList);
+    userData.sites[url] = {topics: topicList, timestamp: Date.now()};
     return userData;
 }
 function removeSite(userData, url){
@@ -197,10 +200,4 @@ function updateTopicSentiments(userData, sentiments, add=true){
         }
     });
     return userData;
-}
-
-// Set a cap on how extreme these views can really be
-// at a certain point it doesn't actually do much to read one more article
-function capSentiment(score, cap){
-    return score <= -1 * cap ? -1*min  : score >= cap ? cap : score;
 }

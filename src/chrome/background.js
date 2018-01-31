@@ -31,6 +31,17 @@ chrome.runtime.onMessage.addListener(
             console.log("Popup Opened")
             processPage(false, request.url);
         }
+        if(request.action == "updateSentiments"){
+            console.log("Sentiment Update Requested for "+request.url)
+            console.log(request.sentiments)
+            updateSiteSentiments(request.url, request.sentiments, function(sentiments){
+                chrome.runtime.sendMessage({reload: true});
+            })
+        }
+        if(request.action == "ignoreTopic"){
+            console.log("Ignoring "+request.topic)
+            ignoreTopic(request.topic)
+        }
     }
 );
 chrome.tabs.onActivated.addListener(
@@ -91,6 +102,8 @@ function invalidArticle(){
     chrome.runtime.sendMessage({action: "notarticle"});
 }
 
+// sentiments here are an array
+// [topic, overall_score, site_score]
 function updateExtensionInfo(sentiments){
     var sentiment = getMostExtremeSentiment(sentiments);
     var sentimentTopic = sentiment[0];
@@ -232,26 +245,9 @@ function getTopicSentiments(text, topicList){
     topicSentiments = capSentiments(topicSentiments)
     return topicSentiments;
 }
-// simple helper to limit the impact of any one article
-// by capping all sentiments from that one article to the range -cap to cap
-function capSentiments(sentiments, cap = 20){
-    Object.keys(sentiments).forEach(function(key) {
-        // just set an artificial cap on it so one article doesn't skew too much
-        if(sentiments[key] > cap){
-            sentiments[key] = cap;
-        }else if(sentiments[key] < -1 * cap){
-            sentiments[key] = -1 * cap;
-        }
-    });
-    return sentiments
-}
-// just normalize the topics a bit, stripping out quote marks and the like
-function cleanTopic(topic){
-    return topic.replace(/[^\w ']/g, '');
-}
 // get our top topics from all the possible topics and their frequencies
 // we only want to keep topics if they contain a noun
-function filterTopics(topics, keep = 5, minScore = 3){
+function filterTopics(topics, keep = 5, minScore = 1){
     var searchString;
     var i;
     var itemWords;
