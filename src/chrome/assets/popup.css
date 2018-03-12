@@ -1,12 +1,15 @@
 body{
     width: 300px;
 }
-.slider {
+.slider, .edit-slider {
     -webkit-appearance: none;
     width: 200px;
     height: 5px;
     background: #E0E0E0;
     outline: none;
+}
+.edit-slider {
+    margin-bottom: 5px;
 }
 
 .slider-container{

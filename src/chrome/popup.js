@@ -27,6 +27,16 @@ chrome.extension.onMessage.addListener(function(request, messageSender, sendResp
     generateHtml(request);
     attachListeners(request);
 });
+chrome.runtime.getPlatformInfo(info => {
+
+    if (info.os === 'mac') {
+        setTimeout(() => {
+            // Increasing body size enforces the popup redrawing
+            document.body.style.width = `${document.body.clientWidth + 1}px`;
+        }, 250); // 250ms is enough to finish popup open animation
+    }
+
+});
 function generateHtml(request){
     var messageDiv = document.getElementById("tos-message");
     var processing = document.getElementById("tos-default");
@@ -39,6 +49,7 @@ function generateHtml(request){
         var extremeSentiment = request.mostExtremeSentiment;
         intro.innerHTML = getMainMessage(extremeTopic, extremeSentiment);
         if(request.sentiments.length > 0){
+
             detailed.innerHTML = getBreakdown(request.sentiments);
         }else{
             detailed.innerHTML = "There are no non-ignored topics on this page."
@@ -190,7 +201,11 @@ function getSentimentDetail(topic, sentiment, site_sentiment){
     resultHtml +="</div><div class='utilities'><button class='ignore-button' data-topic='"+topic+"'>Ignore Topic</button></div></div>";
     resultHtml +="<div class='edit-mode hidden'>";
     resultHtml +="<b>Topic: "+topic+"</b><br/>";
-    resultHtml +="<input type='range' min='-20' max='20' value='"+site_sentiment+"' data-topic='"+topic+"' class='edit-sentiment slider'>"
+    resultHtml += "<div class='slider-container'>"
+    resultHtml +="<input type='range' min='-20' max='20' value='"+site_sentiment+"' data-topic='"+topic+"' class='edit-sentiment edit-slider'>"
+    resultHtml +="<div class='slider-neg-extreme'>-20</div>";
+    resultHtml +="<div class='slider-middle'>0</div>";
+    resultHtml +="<div class='slider-pos-extreme'>20</div></div>";
     resultHtml +="<div class='utilities'><button class='delete-button' data-topic='"+topic+"'>Delete Topic</button></div></div></div></div>";
     return resultHtml;
 }
