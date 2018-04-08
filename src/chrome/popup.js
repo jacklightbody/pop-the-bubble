@@ -59,14 +59,6 @@ function generateHtml(request){
     processing.style.display = "none";
 }
 function attachListeners(request){
-    var ignores = document.getElementsByClassName("ignore-button");
-    for(var i = 0; i < ignores.length; i++) {
-        var button = ignores[i];
-        button.addEventListener('click', function() {
-            chrome.runtime.sendMessage({action: "ignoreTopic", topic: button.dataset.topic});   
-            loadPopup()
-        });
-    }
     var more = document.getElementById("more");
     if(more == null){
         return;
@@ -88,12 +80,20 @@ function attachListeners(request){
         cancel.addEventListener('click', toggleEditMode);
         var save = document.getElementById("save-edit");
         save.addEventListener('click', saveEdits);
-        var deletes = document.getElementsByClassName("delete-button");
-        for(var i = 0; i < deletes.length; i++) {
-            var button = deletes[i];
+        var resets = document.getElementsByClassName("reset-button");
+        for(var i = 0; i < resets.length; i++) {
+            var button = resets[i];
             button.addEventListener('click', function() {
                 var overview = findAncestor(button, "topic-breakdown")
                 overview.classList.add("hidden");
+            });
+        }
+        var ignores = document.getElementsByClassName("ignore-button");
+        for(var i = 0; i < ignores.length; i++) {
+            var button = ignores[i];
+            button.addEventListener('click', function() {
+                chrome.runtime.sendMessage({action: "ignoreTopic", topic: button.dataset.topic});   
+                loadPopup()
             });
         }
     });
@@ -198,7 +198,7 @@ function getSentimentDetail(topic, sentiment, site_sentiment){
     resultHtml +="<div class='slider-neg-extreme'>-100</div>";
     resultHtml +="<div class='slider-middle'>0</div>";
     resultHtml +="<div class='slider-pos-extreme'>100</div>";
-    resultHtml +="</div><div class='utilities'><button class='ignore-button' data-topic='"+topic+"'>Ignore Topic</button></div></div>";
+    resultHtml +="</div></div>";
     resultHtml +="<div class='edit-mode hidden'>";
     resultHtml +="<b>Topic: "+topic+"</b><br/>";
     resultHtml += "<div class='slider-container'>"
@@ -206,7 +206,8 @@ function getSentimentDetail(topic, sentiment, site_sentiment){
     resultHtml +="<div class='slider-neg-extreme'>-20</div>";
     resultHtml +="<div class='slider-middle'>0</div>";
     resultHtml +="<div class='slider-pos-extreme'>20</div></div>";
-    resultHtml +="<div class='utilities'><button class='delete-button' data-topic='"+topic+"'>Delete Topic</button></div></div></div></div>";
+    resultHtml +="<div class='utilities'><button class='reset-button' data-topic='"+topic+"'>Reset Score</button>"
+    resultHtml +="<button class='ignore-button' data-topic='"+topic+"'>Stop Tracking</button></div></div></div></div>";
     return resultHtml;
 }
 

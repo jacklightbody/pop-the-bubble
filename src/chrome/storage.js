@@ -155,7 +155,16 @@ function ignoreDomain(domain){
         saveData(userData);
     });
 }
-function ignoreTopic(ignoreTopic){
+function ignoreTopic(topic){
+    resetTopic(topic)
+    loadData(function(userData){
+        userData.ignored.topics[ignoreTopic] = 0;
+        saveData(userData);
+    });
+}
+// Remove all the scores with a topic
+// So we start from 0 again
+function resetTopic(topic){
     loadData(function(userData){
         Object.keys(userData.sites).forEach(function(url) {
             userData.sites[url].topics.forEach(function(topic, index, object) {
@@ -169,7 +178,6 @@ function ignoreTopic(ignoreTopic){
                 delete userData.topics[topic];
             }
         });
-        userData.ignored.topics[ignoreTopic] = 0;
         saveData(userData);
     });
 }

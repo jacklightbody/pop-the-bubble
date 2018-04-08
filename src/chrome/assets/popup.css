@@ -2,8 +2,8 @@ body{
     width: 300px;
 }
 .slider, .edit-slider {
+    width: 300px;
     -webkit-appearance: none;
-    width: 200px;
     height: 5px;
     background: #E0E0E0;
     outline: none;
@@ -13,7 +13,7 @@ body{
 }
 
 .slider-container{
-    width: 200px;
+    width: 300px;
     float: left;
 }
 .clearfix:after {
@@ -37,18 +37,14 @@ body{
     float: left;
 }
 .slider-middle{
-    margin-left: 100px;
-    margin-right: 100px;
+    margin-left: 150px;
+    margin-right: 150px;
     position: absolute;
 }
 .topic-breakdown{
     width: 300px;
     border-bottom: 1px solid black;
     padding: 15px 0px;
-}
-.utilities{
-    width: 100px;
-    float: right;
 }
 button {
     background-color: white;
@@ -67,15 +63,21 @@ button:active{
     display: none;
 }
 .utilities button{
-    width: 90px;
-    margin-left: 10px;
+    width: 140px;
     height: 30px;
+}
+.utilities button:first-of-type{
+    margin-right: 20px;
 }
 .topic-breakdown b{
     text-transform: capitalize;
 }
 .topic-breakdown:last-of-type{
     border-bottom: none;
+}
+#advanced-settings{
+    border-top: 1px solid black; 
+    padding-top: 20px;  
 }
 #more {
     background: #e0e0e0;
@@ -95,4 +97,17 @@ button:active{
     width: 300px;
     padding: 10px 0px;
     margin: 5px 0;
+}
+button:hover{
+    color: black;
+    border-color: black;
+    cursor: pointer;
+}
+#save-edit{
+    color: #02ad00;
+    border-color: #02ad00;
+}
+#ignore-domain, #cancel-edit{
+    color: #d10000;
+    border-color: #d10000;
 }

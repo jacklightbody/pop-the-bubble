@@ -2,7 +2,7 @@ let wordThreshold = 100;
 let minKeywordCharLength = 3;
 let maxKeywordWordsLength = 5; 
 let minKeywordFrequency = 3; 
-let keepKeywords = 5;
+let keepKeywords = 3;
 let minLineWords = 10;
 let stopwords = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you",
     "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she",
@@ -40,6 +40,10 @@ chrome.runtime.onMessage.addListener(
         }
         if(request.action == "ignoreTopic"){
             console.log("Ignoring "+request.topic)
+            ignoreTopic(request.topic)
+        }
+        if(request.action == "resetTopic"){
+            console.log("Resetting "+request.topic)
             ignoreTopic(request.topic)
         }
     }
