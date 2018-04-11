@@ -41,7 +41,7 @@ function generateHtml(request){
     var messageDiv = document.getElementById("tos-message");
     var processing = document.getElementById("tos-default");
     if(request.action == "notarticle"){
-        messageDiv.innerHTML = "This page is not an article or has no non-ignored topics";
+        messageDiv.innerHTML = "Unable to parse page";
     }else if(request.action == "sentiments"){
         var intro = document.getElementById("tos-intro");
         var detailed = document.getElementById("tos-detailed");
@@ -52,7 +52,7 @@ function generateHtml(request){
 
             detailed.innerHTML = getBreakdown(request.sentiments);
         }else{
-            detailed.innerHTML = "There are no non-ignored topics on this page."
+            detailed.innerHTML = "There are no divisive topics on this page."
         }
     }
     messageDiv.style.display = "block";
@@ -83,17 +83,22 @@ function attachListeners(request){
         var resets = document.getElementsByClassName("reset-button");
         for(var i = 0; i < resets.length; i++) {
             var button = resets[i];
-            button.addEventListener('click', function() {
-                var overview = findAncestor(button, "topic-breakdown")
-                overview.classList.add("hidden");
+            resets[i].addEventListener('click', function(event) {
+                var button = event.target || event.srcElement;
+                chrome.runtime.sendMessage({action: "resetTopic", topic: button.dataset.topic}); 
+                toggleEditMode();
+
+                loadPopup();
             });
         }
         var ignores = document.getElementsByClassName("ignore-button");
         for(var i = 0; i < ignores.length; i++) {
-            var button = ignores[i];
-            button.addEventListener('click', function() {
-                chrome.runtime.sendMessage({action: "ignoreTopic", topic: button.dataset.topic});   
-                loadPopup()
+            ignores[i].addEventListener('click', function(event) {
+                var button = event.target || event.srcElement;
+                chrome.runtime.sendMessage({action: "ignoreTopic", topic: button.dataset.topic});  
+                toggleEditMode();
+                
+                loadPopup();
             });
         }
     });

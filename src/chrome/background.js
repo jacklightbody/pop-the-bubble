@@ -23,6 +23,7 @@ let stopwords = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "y
 ];
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
+        console.log(request)
         if (request.pageLoaded) {
             console.log("Page Loaded")
             processPage(request.doc, request.loc);
@@ -44,7 +45,7 @@ chrome.runtime.onMessage.addListener(
         }
         if(request.action == "resetTopic"){
             console.log("Resetting "+request.topic)
-            ignoreTopic(request.topic)
+            resetTopic(request.topic)
         }
     }
 );
@@ -64,7 +65,6 @@ async function processPage(doc, url){
         }else{
             console.log("New URL");
             if(!doc){
-                console.log(doc);
                 invalidArticle();
                 return;
             }
