@@ -28,25 +28,38 @@ chrome.runtime.onMessage.addListener(
             console.log("Page Loaded")
             processPage(request.doc, request.loc);
         }
-        if (request.action == "getSentiments"){
-            console.log("Popup Opened")
-            processPage(false, request.url);
-        }
-        if(request.action == "updateSentiments"){
-            console.log("Sentiment Update Requested for "+request.url)
-            console.log(request.sentiments)
-            updateSiteSentiments(request.url, request.sentiments, function(sentiments){
-                chrome.runtime.sendMessage({reload: true});
-            })
-        }
-        if(request.action == "ignoreTopic"){
-            console.log("Ignoring "+request.topic)
-            ignoreTopic(request.topic)
-        }
-        if(request.action == "resetTopic"){
-            console.log("Resetting "+request.topic)
-            resetTopic(request.topic)
-        }
+        switch (request.action) {
+            case "getSentiments":
+                console.log("Popup Opened")
+                processPage(false, request.url);
+                break;
+            case "updateSentiments":
+                console.log("Sentiment Update Requested for "+request.url)
+                console.log(request.sentiments)
+                updateSiteSentiments(request.url, request.sentiments, function(sentiments){
+                    chrome.runtime.sendMessage({reload: true});
+                })
+                break;
+            case "updateIgnored":
+                console.log("Ignored List Update")
+                console.log(request.topics)
+                console.log(request.sites)
+                bulkIgnore(request.sites, request.topics, function(sentiments){
+                    chrome.runtime.sendMessage({reload: true});
+                })
+                break;
+            case "ignoreTopic":
+                console.log("Ignoring Topic "+request.topic)
+                ignoreTopicWrapper(request.topic)
+                break;
+            case "ignoreDomain":
+                console.log("Ignoring Domain "+request.domain)
+                ignoreDomainWrapper(request.domain)
+                break;
+            case "resetTopic":
+                console.log("Resetting "+request.topic)
+                resetTopic(request.topic)
+                break;
     }
 );
 chrome.tabs.onActivated.addListener(

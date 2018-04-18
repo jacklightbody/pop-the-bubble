@@ -75,10 +75,6 @@ button:active{
 .topic-breakdown:last-of-type{
     border-bottom: none;
 }
-#advanced-settings{
-    border-top: 1px solid black; 
-    padding-top: 20px;  
-}
 #more {
     background: #e0e0e0;
     width: 300px;
@@ -91,9 +87,21 @@ button:active{
 }
 #advanced-settings{
     display: none;
-    margin: 5px 0px;
 }
-#advanced-settings button{
+#ignore-mode textarea{
+    border-radius: 3px;
+    width: 300px;
+    padding: 10px 0px;
+    margin: 5px 0px;
+    height: 75px;
+    resize: none;
+}
+.settings{
+    margin: 5px 0px;
+    border-top: 1px solid black; 
+    padding-top: 20px;  
+}
+.settings button{
     width: 300px;
     padding: 10px 0px;
     margin: 5px 0;
@@ -103,11 +111,11 @@ button:hover{
     border-color: black;
     cursor: pointer;
 }
-#save-edit{
+#save-edit, #save-ignore{
     color: #02ad00;
     border-color: #02ad00;
 }
-#ignore-domain, #cancel-edit{
+#ignore-domain, #cancel-edit, #cancel-ignore{
     color: #d10000;
     border-color: #d10000;
 }

@@ -47,6 +47,11 @@ function loadData(callback){
     // specify default values here so that if we haven't saved anything yet it doesn't fail
     chrome.storage.local.get(storageDefault, function(el){        
         var userData = el[storageKey];
+        // first clean out the old data if needed
+        if(userData.lastCleaned < Date.now() - 24 * 60 * 60 * 1000){
+            userData = cleanOldData(userData);
+            userData.lastCleaned = Date.now();
+        }
         callback(userData);
     });    
 }
@@ -69,15 +74,35 @@ function getSite(url, callback){
 // lets loadData interact with chrome
 function updateSiteSentiments(url, sentiments, callback=false){
     loadData(function(userData){
-        // first clean out the old data if needed
-        if(userData.lastCleaned < Date.now() - 24 * 60 * 60 * 1000){
-            userData = cleanOldData(userData);
-            userData.lastCleaned = Date.now();
-        }
         // update the data and set it again
         if(!siteShouldBeIgnored(userData, url)){
             userData = updateUserData(userData, url, sentiments);
         }
+
+        if(callback){
+            // at this stage we don't let anything modify our userData
+            // but they can use it to update our icon graphics etc.
+            callback(getSiteSentiments(userData, url));
+        }
+        saveData(userData);
+    });
+}
+
+// lets the user bulk specify topics and domains to ignore
+function bulkIgnore(topics, sites, callback=false){
+    loadData(function(userData){
+        topics.forEach(function(topic){
+            if(!topicShouldBeIgnored(userData, topic)){
+                // the topic isn't already getting ignored
+                userData = ignoreTopic(topic);
+            }
+        });
+        sites.forEach(function(site){
+            if(!siteShouldBeIgnored(userData, site)){
+                // the site isn't already getting ignored
+                userData = ignoreDomain(site);
+            }
+        });
 
         if(callback){
             // at this stage we don't let anything modify our userData
@@ -142,44 +167,58 @@ function cleanOldData(userData, daysBack = 14){
 // These next few functions are sisters, in that they are triggered when the user ignores an domain or topic
 // and we need to go over all our old information and see if any of it needs to be cleaned out
 // to reflect this new preference
-function ignoreDomain(domain){
+function ignoreDomainWrapper(site){
     loadData(function(userData){
-        Object.keys(userData.sites).forEach(function(url) {
-            if(new URL(url).hostname == domain){
-                // the user just told us ignore all data from this domain
-                // so we need to remove it 
-               userData = removeSite(userData, url)
-            }
-        });
-        userData.ignored.domains[domain] = 0;
+        userData = ignoreDomain(userData, site);
         saveData(userData);
-    });
+    }
 }
-function ignoreTopic(ignoreTopic){
-    resetTopic(ignoreTopic, function(userData){
-        userData.ignored.topics[ignoreTopic] = 0;
-        return userData;
+function ignoreDomain(userData, domain){
+    let url = new URL(url);
+    domain = url.hostname;
+    Object.keys(userData.sites).forEach(function(url) {
+        if(new URL(url).hostname == domain){
+            // the user just told us ignore all data from this domain
+            // so we need to remove it 
+           userData = removeSite(userData, url)
+        }
     });
+    userData.ignored.domains[domain] = 0;
+    return userData;
 }
-// Remove all the scores with a topic
-// So we start from 0 again
-function resetTopic(resetTopic, callback){
+// remove all scores for a topic and add it to the ignored list
+// so that we don't keep tracking these topics
+function ignoreTopicWrapper(topic){
     loadData(function(userData){
+        userData = ignoreTopic(userData, topic);
+        saveData(userData);
+    }
+}
+function ignoreTopic(userData, ignoreTopic){
         Object.keys(userData.sites).forEach(function(url) {
             userData.sites[url].topics.forEach(function(topic, index, object) {
-                if(topic[0].valueOf() == resetTopic.valueOf()){
+                if(topic[0].valueOf() == ignoreTopic.valueOf()){
                     object.splice(index, 1);
                 }
             });
         });
         Object.keys(userData.topics).forEach(function(topic) {
-            if(topic == resetTopic){
+            if(topic == ignoreTopic){
                 delete userData.topics[topic];
             }
         });
-        if(callback){
-            userData=callback(userData)
-        }
+        userData.ignored.topics[ignoreTopic] = 0;
+        return userData
+    });
+}
+// Set overall score for a topic to 0 to reset
+function resetTopic(resetTopic){
+    loadData(function(userData){
+        Object.keys(userData.topics).forEach(function(topic) {
+            if(topic == resetTopic){
+                userData.topics[topic] = 0;
+            }
+        });
         saveData(userData);
     });
 }

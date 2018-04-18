@@ -69,17 +69,27 @@ function attachListeners(request){
         var ignore = document.getElementById("ignore-domain");
         ignore.addEventListener('click', function() {
             getCurrentUrl(function(url){
-                url = new URL(url);
-                ignoreDomain(url.hostname);
+                var button = event.target || event.srcElement;
+                chrome.runtime.sendMessage({action: "ignoreDomain", domain: url});  
+                toggleEditMode();
                 loadPopup();
             });
         });
+
         var editor = document.getElementById("edit-topics");
         editor.addEventListener('click', toggleEditMode);
         var cancel = document.getElementById("cancel-edit");
         cancel.addEventListener('click', toggleEditMode);
         var save = document.getElementById("save-edit");
         save.addEventListener('click', saveEdits);
+
+        var ignore = document.getElementById("edit-ignore");
+        ignore.addEventListener('click', toggleIgnoreMode);
+        var cancelIgnore = document.getElementById("cancel-ignore");
+        cancelIgnore.addEventListener('click', toggleIgnoreMode);
+        var save = document.getElementById("save-ignore");
+        save.addEventListener('click', saveIgnore);
+
         var resets = document.getElementsByClassName("reset-button");
         for(var i = 0; i < resets.length; i++) {
             var button = resets[i];
@@ -87,17 +97,16 @@ function attachListeners(request){
                 var button = event.target || event.srcElement;
                 chrome.runtime.sendMessage({action: "resetTopic", topic: button.dataset.topic}); 
                 toggleEditMode();
-
                 loadPopup();
             });
         }
+
         var ignores = document.getElementsByClassName("ignore-button");
         for(var i = 0; i < ignores.length; i++) {
             ignores[i].addEventListener('click', function(event) {
                 var button = event.target || event.srcElement;
                 chrome.runtime.sendMessage({action: "ignoreTopic", topic: button.dataset.topic});  
                 toggleEditMode();
-                
                 loadPopup();
             });
         }
@@ -120,9 +129,24 @@ function saveEdits(){
         return;
     });
 }
+function saveIgnore(){
+    var topics = document.getElementsByClassName("ignore-topics").value.split(",");
+    var sites = document.getElementsByClassName("ignore-sites").value.split(",");
+    getCurrentUrl(function(url){
+        toggleIgnoreMode();
+        chrome.runtime.sendMessage({action: "updateIgnored", sites:sites, topics:topics});   
+        return;
+    });
+}
+function toggleIgnoreMode(){
+    var defaultView = document.getElementById("main-content");
+    var editView = document.getElementById("ignore-mode");
+    defaultView.classList.toggle("hidden");
+    editView.classList.toggle("hidden");
+}
 function toggleEditMode(){
-    var editViews = document.getElementsByClassName("edit-mode");
     var defaultViews = document.getElementsByClassName("view-mode");
+    var editViews = document.getElementsByClassName("edit-mode");
     var parents = document.getElementsByClassName("topic-breakdown");
     for (var i = defaultViews.length - 1; i >= 0; i--) {
         if(i < editViews.length){
@@ -197,7 +221,7 @@ function getBreakdown(sentiments){
 function getSentimentDetail(topic, sentiment, site_sentiment){
     var resultHtml = "<div class='topic-breakdown clearfix'><div class='view-mode'>";
     resultHtml +="<b>Topic: "+topic+"</b><br/>";
-    resultHtml +="<span>Score: "+sentiment+"</span><br/>";
+    resultHtml +="<span>Page Score: "+site_sentiment+"</span><br/>";
     resultHtml += "<div class='slider-container'>"
     resultHtml +="<input type='range' min='-100' max='100' value='"+sentiment+"' disabled='true' class='slider sentiment"+Math.abs(sentiment)+"'>";
     resultHtml +="<div class='slider-neg-extreme'>-100</div>";

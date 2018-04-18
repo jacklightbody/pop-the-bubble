@@ -9,16 +9,29 @@
         Processing Page
     </div>
     <div id="tos-message">
-        <h2 class="view-mode">Most Divisive Topic</h2>
-        <div id="tos-intro" class="view-mode"></div>
-        <h2>Detailed Breakdown</h2>
-        <div id="tos-detailed"></div>
-        <span id="more">&#9660;</span>
-        <div id="advanced-settings">
-            <button class="view-mode" id="ignore-domain">Stop Tracking Domain</button>
-            <button class="view-mode" id="edit-topics">Edit Page Topics</button>
-            <button class="edit-mode hidden" id="cancel-edit">Cancel Edits</button>
-            <button class="edit-mode hidden" id="save-edit">Save Edits</button>
+        <div id="ignore-mode" class="hidden">
+            <h2>Untracked Topics</h2>
+            <textarea id="ignore-topics"></textarea>
+            <h2>Untracked Sites</h2> 
+            <textarea id="ignore-sites"></textarea>
+            <div class="settings">
+                <button id="cancel-ignore">Cancel Edits</button>
+                <button id="save-ignore">Save Edits</button>
+            </div>
+        </div>
+        <div id="main-content">
+            <h2 class="view-mode">Most Divisive Topic</h2>
+            <div id="tos-intro" class="view-mode"></div>
+            <h2>Detailed Breakdown</h2>
+            <div id="tos-detailed"></div>
+            <span id="more">&#9660;</span>
+            <div id="advanced-settings" class="settings">
+                <button class="view-mode" id="ignore-domain">Stop Tracking Domain</button>
+                <button class="view-mode" id="edit-topics">Edit Page Topics</button>
+                <button class="view-mode" id="edit-ignore">Edit Untracked Lists</button>
+                <button class="edit-mode hidden" id="cancel-edit">Cancel Edits</button>
+                <button class="edit-mode hidden" id="save-edit">Save Edits</button>
+            </div>
         </div>
     </div>
 </div>
