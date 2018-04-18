@@ -102,7 +102,7 @@ async function processPage(doc, url){
 }
 function invalidArticle(){
     console.log("Not an Article");
-    updateIcon(0);
+    updateIcon(false);
     chrome.runtime.sendMessage({action: "notarticle"});
 }
 
@@ -124,7 +124,15 @@ function updateExtensionInfo(sentiments){
 function updateIcon(sentiment){
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d"); 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);  
+    var basecolor = "black";
+    if(!sentiment){
+        // lighter shade if its an invalid article so people don't want to click on it
+        basecolor = "#a5a5a5";
+    }
+    ctx.strokeStyle = basecolor;
+    ctx.fillStyle = basecolor;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
 
     //draw triangle
     ctx.beginPath();
