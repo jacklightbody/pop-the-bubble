@@ -39,9 +39,12 @@ chrome.runtime.getPlatformInfo(info => {
 });
 function generateHtml(request){
     var messageDiv = document.getElementById("tos-message");
+    var sentimentsDiv = document.getElementById("sentiments-breakdown");
     var processing = document.getElementById("tos-default");
     if(request.action == "notarticle"){
-        messageDiv.innerHTML = "Unable to parse page";
+        editButton = document.getElementById("edit-topics");
+        editButton.style.display = "none";
+        sentimentsDiv.innerHTML = "Unable to parse page";
     }else if(request.action == "sentiments"){
         var intro = document.getElementById("tos-intro");
         var detailed = document.getElementById("tos-detailed");
@@ -66,12 +69,10 @@ function attachListeners(request){
     more.addEventListener('click', function() {
         document.getElementById("advanced-settings").style.display = "block";
         more.style.display = "none";
-        var ignore = document.getElementById("ignore-domain");
-        ignore.addEventListener('click', function() {
+        var domainIgnore = document.getElementById("ignore-domain");
+        domainIgnore.addEventListener('click', function() {
             getCurrentUrl(function(url){
-                var button = event.target || event.srcElement;
                 chrome.runtime.sendMessage({action: "ignoreDomain", domain: url});  
-                toggleEditMode();
                 loadPopup();
             });
         });

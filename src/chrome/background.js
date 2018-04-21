@@ -53,13 +53,14 @@ chrome.runtime.onMessage.addListener(
                 ignoreTopicWrapper(request.topic)
                 break;
             case "ignoreDomain":
-                console.log("Ignoring Domain "+request.domain)
+                console.log("Ignoring Site "+request.domain)
                 ignoreDomainWrapper(request.domain)
                 break;
             case "resetTopic":
                 console.log("Resetting "+request.topic)
                 resetTopic(request.topic)
                 break;
+        }
     }
 );
 chrome.tabs.onActivated.addListener(
@@ -72,6 +73,10 @@ chrome.tabs.onActivated.addListener(
 //pipeline handler
 async function processPage(doc, url){
     getSite(url, async function(sentiments){
+        if(sentiments == null){
+            invalidArticle();
+            return;
+        }
         if(sentiments){
             console.log("Already Visted Article");
             updateExtensionInfo(sentiments);
@@ -115,7 +120,7 @@ async function processPage(doc, url){
 }
 function invalidArticle(){
     console.log("Not an Article");
-    updateIcon(false);
+    updateIcon(null);
     chrome.runtime.sendMessage({action: "notarticle"});
 }
 
@@ -138,7 +143,7 @@ function updateIcon(sentiment){
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d"); 
     var basecolor = "black";
-    if(!sentiment){
+    if(sentiment == null){
         // lighter shade if its an invalid article so people don't want to click on it
         basecolor = "#a5a5a5";
     }

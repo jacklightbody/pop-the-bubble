@@ -115,7 +115,7 @@ function bulkIgnore(topics, sites, callback=false){
 
 function getSiteSentiments(userData, url){
     if(siteShouldBeIgnored(userData, url)){
-        return [];
+        return null;
     }
     if(url in userData.sites){
         // any time we get a site sentiment we're visiting it
@@ -171,10 +171,10 @@ function ignoreDomainWrapper(site){
     loadData(function(userData){
         userData = ignoreDomain(userData, site);
         saveData(userData);
-    }
+    });
 }
 function ignoreDomain(userData, domain){
-    let url = new URL(url);
+    let url = new URL(domain);
     domain = url.hostname;
     Object.keys(userData.sites).forEach(function(url) {
         if(new URL(url).hostname == domain){
@@ -192,24 +192,23 @@ function ignoreTopicWrapper(topic){
     loadData(function(userData){
         userData = ignoreTopic(userData, topic);
         saveData(userData);
-    }
+    });
 }
 function ignoreTopic(userData, ignoreTopic){
-        Object.keys(userData.sites).forEach(function(url) {
-            userData.sites[url].topics.forEach(function(topic, index, object) {
-                if(topic[0].valueOf() == ignoreTopic.valueOf()){
-                    object.splice(index, 1);
-                }
-            });
-        });
-        Object.keys(userData.topics).forEach(function(topic) {
-            if(topic == ignoreTopic){
-                delete userData.topics[topic];
+    Object.keys(userData.sites).forEach(function(url) {
+        userData.sites[url].topics.forEach(function(topic, index, object) {
+            if(topic[0].valueOf() == ignoreTopic.valueOf()){
+                object.splice(index, 1);
             }
         });
-        userData.ignored.topics[ignoreTopic] = 0;
-        return userData
     });
+    Object.keys(userData.topics).forEach(function(topic) {
+        if(topic == ignoreTopic){
+            delete userData.topics[topic];
+        }
+    });
+    userData.ignored.topics[ignoreTopic] = 0;
+    return userData;
 }
 // Set overall score for a topic to 0 to reset
 function resetTopic(resetTopic){
