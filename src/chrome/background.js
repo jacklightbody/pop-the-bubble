@@ -130,11 +130,14 @@ function updateExtensionInfo(sentiments){
     var sentiment = getMostExtremeSentiment(sentiments);
     var sentimentTopic = sentiment[0];
     sentiment = sentiment[1];
-    chrome.runtime.sendMessage({
-        action: "sentiments", 
-        sentiments: sentiments,
-        mostExtremeTopic: sentimentTopic,
-        mostExtremeSentiment: sentiment
+    var ignored = getIgnored(function(ignored){
+        chrome.runtime.sendMessage({
+            action: "sentiments", 
+            ignored: ignored,
+            sentiments: sentiments,
+            mostExtremeTopic: sentimentTopic,
+            mostExtremeSentiment: sentiment
+        });
     });
     updateIcon(sentiment);
 }

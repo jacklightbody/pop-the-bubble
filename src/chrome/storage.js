@@ -69,6 +69,11 @@ function getSite(url, callback){
         callback(getSiteSentiments(userData, url));
     });
 }
+function getIgnored(callback){
+    loadData(function(userData){
+        callback(userData.ignored);
+    });
+}
 
 // does the meat of the updating topic sentiments in the right flow
 // lets loadData interact with chrome

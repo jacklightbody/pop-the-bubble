@@ -49,6 +49,9 @@ function generateHtml(request){
         var intro = document.getElementById("tos-intro");
         var detailed = document.getElementById("tos-detailed");
         var extremeTopic = request.mostExtremeTopic;
+        loadIgnoredData(request.ignored);
+        console.log(request.ignored)
+        console.log("ignored")
         var extremeSentiment = request.mostExtremeSentiment;
         intro.innerHTML = getMainMessage(extremeTopic, extremeSentiment);
         if(request.sentiments.length > 0){
@@ -112,6 +115,22 @@ function attachListeners(request){
             });
         }
     });
+}
+function loadIgnoredData(ignored){
+    var topicsEl = document.getElementById("ignore-topics");
+    var sitesEl = document.getElementById("ignore-sites");
+    var sites = Object.keys(ignored.domains).map(function(site) {
+        return site;
+    });
+    var topics = Object.keys(ignored.topics).map(function(topic) {
+        return topic;
+    });
+    console.log(topics)
+    console.log(topics.join(", "))
+    console.log(sites)
+    console.log(sites.join(", "))
+    topicsEl.value = topics.join(", ");
+    sitesEl.value = sites.join(", ");
 }
 function saveEdits(){
     var sliders = document.getElementsByClassName("edit-sentiment");

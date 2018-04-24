@@ -16,5 +16,5 @@ function cleanTopic(topic){
 // Set a cap on how extreme these views can really be
 // at a certain point it doesn't actually do much to read one more article
 function capSentiment(score, cap){
-    return score <= -1 * cap ? -1*min  : score >= cap ? cap : score;
+    return score <= -1 * cap ? -1*cap  : score >= cap ? cap : score;
 }
