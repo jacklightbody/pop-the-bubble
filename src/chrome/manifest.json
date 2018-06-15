@@ -3,7 +3,7 @@
 
   "name": "The Other Side",
   "description": "Escape the echo chamber by getting reminders when you've read a lot of one side of an issue",
-  "version": "0.1",
+  "version": "0.2",
 
   "browser_action": {
    	"default_icon": "assets/icon16.png",
