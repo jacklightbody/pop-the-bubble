@@ -49,9 +49,6 @@ function generateHtml(request){
         var intro = document.getElementById("tos-intro");
         var detailed = document.getElementById("tos-detailed");
         var extremeTopic = request.mostExtremeTopic;
-        loadIgnoredData(request.ignored);
-        console.log(request.ignored)
-        console.log("ignored")
         var extremeSentiment = request.mostExtremeSentiment;
         intro.innerHTML = getMainMessage(extremeTopic, extremeSentiment);
         if(request.sentiments.length > 0){
@@ -61,6 +58,7 @@ function generateHtml(request){
             detailed.innerHTML = "There are no divisive topics on this page."
         }
     }
+    loadIgnoredData(request.ignored);
     messageDiv.style.display = "block";
     processing.style.display = "none";
 }
@@ -125,10 +123,6 @@ function loadIgnoredData(ignored){
     var topics = Object.keys(ignored.topics).map(function(topic) {
         return topic;
     });
-    console.log(topics)
-    console.log(topics.join(", "))
-    console.log(sites)
-    console.log(sites.join(", "))
     topicsEl.value = topics.join(", ");
     sitesEl.value = sites.join(", ");
 }
@@ -150,8 +144,8 @@ function saveEdits(){
     });
 }
 function saveIgnore(){
-    var topics = document.getElementsByClassName("ignore-topics").value.split(",");
-    var sites = document.getElementsByClassName("ignore-sites").value.split(",");
+    var topics = document.getElementById("ignore-topics").value.split(",");
+    var sites = document.getElementById("ignore-sites").value.split(",");
     getCurrentUrl(function(url){
         toggleIgnoreMode();
         chrome.runtime.sendMessage({action: "updateIgnored", sites:sites, topics:topics});   

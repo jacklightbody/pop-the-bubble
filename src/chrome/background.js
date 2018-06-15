@@ -121,7 +121,12 @@ async function processPage(doc, url){
 function invalidArticle(){
     console.log("Not an Article");
     updateIcon(null);
-    chrome.runtime.sendMessage({action: "notarticle"});
+    getIgnored(function(ignored){
+        chrome.runtime.sendMessage({
+            action: "notarticle", 
+            ignored: ignored
+        });
+    });
 }
 
 // sentiments here are an array
@@ -130,7 +135,7 @@ function updateExtensionInfo(sentiments){
     var sentiment = getMostExtremeSentiment(sentiments);
     var sentimentTopic = sentiment[0];
     sentiment = sentiment[1];
-    var ignored = getIgnored(function(ignored){
+    getIgnored(function(ignored){
         chrome.runtime.sendMessage({
             action: "sentiments", 
             ignored: ignored,

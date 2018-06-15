@@ -94,26 +94,24 @@ function updateSiteSentiments(url, sentiments, callback=false){
 }
 
 // lets the user bulk specify topics and domains to ignore
-function bulkIgnore(topics, sites, callback=false){
+function bulkIgnore(sites, topics, callback=false){
     loadData(function(userData){
+        // first off just reset all the previous ignores
+        userData.ignored = {topics:{}, domains:{}}
         topics.forEach(function(topic){
+            topic = topic.trim()
             if(!topicShouldBeIgnored(userData, topic)){
                 // the topic isn't already getting ignored
-                userData = ignoreTopic(topic);
+                userData = ignoreTopic(userData, topic);
             }
         });
         sites.forEach(function(site){
+            site = site.trim()
             if(!siteShouldBeIgnored(userData, site)){
                 // the site isn't already getting ignored
-                userData = ignoreDomain(site);
+                userData = ignoreDomain(userData, site);
             }
         });
-
-        if(callback){
-            // at this stage we don't let anything modify our userData
-            // but they can use it to update our icon graphics etc.
-            callback(getSiteSentiments(userData, url));
-        }
         saveData(userData);
     });
 }
@@ -179,17 +177,20 @@ function ignoreDomainWrapper(site){
     });
 }
 function ignoreDomain(userData, domain){
-    let url = new URL(domain);
-    domain = url.hostname;
-    Object.keys(userData.sites).forEach(function(url) {
-        if(new URL(url).hostname == domain){
-            // the user just told us ignore all data from this domain
-            // so we need to remove it 
-           userData = removeSite(userData, url)
-        }
-    });
-    userData.ignored.domains[domain] = 0;
-    return userData;
+    try{
+        let url = new URL(domain);
+        domain = url.hostname;
+    } finally {
+        Object.keys(userData.sites).forEach(function(url) {
+            if(new URL(url).hostname == domain){
+                // the user just told us ignore all data from this domain
+                // so we need to remove it 
+               userData = removeSite(userData, url)
+            }
+        });
+        userData.ignored.domains[domain] = 0;
+        return userData;
+    }
 }
 // remove all scores for a topic and add it to the ignored list
 // so that we don't keep tracking these topics
