@@ -1,31 +1,24 @@
 {
   "manifest_version": 2,
 
-  "name": "The Other Side",
-  "description": "Escape the echo chamber by getting reminders when you've read a lot of one side of an issue",
+  "name": "Bias Finder",
+  "description": "Get gentle ",
   "version": "0.2",
 
   "browser_action": {
    	"default_icon": "assets/icon16.png",
     "default_popup": "popup.html"
   },
-  "icons": { 
+  "icons": {
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
-    "128": "assets/icon128.png" 
+    "128": "assets/icon128.png"
   },
-  "background": { 
-    "page": "background.html"
-  },
-  "permissions": [
-   	"activeTab",
-    "<all_urls>",
-    "storage"
-  ],
   "content_scripts": [
     {
         "matches" : ["<all_urls>"],
-        "js" : ["content.js"],
+        "js" : ["3rdparty/Readability.js", "3rdparty/sentimood.js", "3rdparty/compromise.min.js", "3rdparty/underscore.min.js", "3rdparty/rake.js", "constants.js", "helper.js", "constants.js", "topic.js", "page_handler.js", "view.js"],
+        "css" : ["assets/page.css"],
         "run_at": "document_end"
     }
   ]

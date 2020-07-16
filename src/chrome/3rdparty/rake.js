@@ -154,4 +154,3 @@ async function rake(text, stopWords, minCharLength=3, maxWordsLength=5, minKeywo
   let wordScores = calculateWordScores(phraseList)
   return keywordCandidates = generateCandidateKeywordScores(phraseList, wordScores, minKeywordFrequency)
 }
-
